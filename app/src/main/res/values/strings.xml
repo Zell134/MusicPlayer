@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MusicPlayer</string>
+    <string name="permission_denied">Необходим доступ к хранилищу данных</string>
+</resources>
