@@ -1,4 +1,4 @@
-package com.zell.musicplayer;
+package com.zell.musicplayer.Services;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -6,14 +6,20 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 
+import com.zell.musicplayer.models.Song;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MediaLibraryAccess {
+public class MediaLibraryService {
 
     Cursor cursor;
 
-    public MediaLibraryAccess(){
+    public MediaLibraryService(){
 
     }
 
@@ -31,7 +37,7 @@ public class MediaLibraryAccess {
         try{
             cursor = contentResolver.query(uri, projection, null, null, null);
 
-            if (cursor.moveToNext()) {
+            if (cursor!=null && cursor.moveToFirst()) {
                 list.add(getSongFromCursorRecord());
                 while (cursor.moveToNext()) {
                     list.add(getSongFromCursorRecord());
@@ -39,18 +45,18 @@ public class MediaLibraryAccess {
             } else {
                 return null;
             }
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         return list;
     }
 
-    private Song getSongFromCursorRecord(){
-        return new Song(cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)),
-                cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)),
-                cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)),
-                cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST))
-        );
+    private Song getSongFromCursorRecord() throws UnsupportedEncodingException {
+        String data = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
+        String title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+        String album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
+        String artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+        return new Song(data, title, album, artist);
     }
 
     public void checkPermissions(){

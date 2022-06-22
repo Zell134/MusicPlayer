@@ -1,24 +1,12 @@
 package com.zell.musicplayer;
 
 
-import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.media.AudioAttributes;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -27,38 +15,28 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.zell.musicplayer.fragments.PlaylistFragment;
 
 public class MainActivity extends AppCompatActivity{
 
     private final int REQUEST_CODE = 1;
-    private final String NOTIFICATION_ID = "2";
+    private final String NOTIFICATION_ID = "Notification";
     public static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
 
-    MediaLibraryAccess mediaLibraryAccess;
-    List<Song> mediaLibrary;
-    ListView list;
-    ArrayAdapter<String> adapter;
-
-    MediaPlayer mediaPlayer = new MediaPlayer();
-    
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
         if(ContextCompat.checkSelfPermission(this, PERMISSION_STRING) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{PERMISSION_STRING}, REQUEST_CODE);
         }else
         {
-            setUp();
+            if (savedInstanceState == null) {
+                getSupportFragmentManager().beginTransaction()
+                        .setReorderingAllowed(true)
+                        .add(R.id.playlist_container, PlaylistFragment.class, null)
+                        .commit();
+            }
         }
     }
 
@@ -70,8 +48,10 @@ public class MainActivity extends AppCompatActivity{
         switch (requestCode) {
             case REQUEST_CODE: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setUp();
-                }
+                    getSupportFragmentManager().beginTransaction()
+                            .setReorderingAllowed(true)
+                            .add(R.id.playlist_container, PlaylistFragment.class, null)
+                            .commit();                }
                 else {
                     NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_ID)
                             .setSmallIcon(android.R.drawable.ic_menu_compass)
@@ -98,55 +78,5 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if(mediaPlayer != null){
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-    }
-
-    public void setUp(){
-        mediaLibraryAccess = new MediaLibraryAccess();
-        mediaLibrary = mediaLibraryAccess.getAllMediaFromLibrary(getApplication());
-
-        List<String> listOfSongs = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            listOfSongs = mediaLibrary
-                    .stream()
-                    .map(element->element.getArtist() + " - " + element.getName())
-                    .collect(Collectors.toList()
-                    );
-        }
-
-        adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1,
-                listOfSongs);
-        list = findViewById(R.id.list);
-        list.setAdapter(adapter);
-
-        mediaPlayer.setAudioAttributes(
-                new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .build()
-        );
-
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                try {
-                    mediaPlayer.reset();
-                    mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(mediaLibrary.get(i).getPath()));
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                }catch(IOException e){
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 }

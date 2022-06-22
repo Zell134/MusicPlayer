@@ -1,10 +1,10 @@
-package com.zell.musicplayer;
+package com.zell.musicplayer.models;
 
 import android.net.Uri;
 
 public class Song {
     private String path;
-    private String name;
+    private String title;
     private String album;
     private String artist;
 
@@ -12,9 +12,9 @@ public class Song {
 
     }
 
-    public Song(String path, String name, String album, String artist) {
+    public Song(String path, String title, String album, String artist) {
         this.path = path;
-        this.name = name;
+        this.title = title;
         this.album = album;
         this.artist = artist;
     }
@@ -27,12 +27,12 @@ public class Song {
         this.path = path;
     }
 
-    public String getName() {
-        return name;
+    public String getTitle() {
+        return title;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getAlbum() {
