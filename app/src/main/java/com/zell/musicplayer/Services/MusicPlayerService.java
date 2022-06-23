@@ -12,7 +12,6 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.zell.musicplayer.fragments.PlaylistFragment;
 import com.zell.musicplayer.models.Song;
 
 import java.util.List;
@@ -20,8 +19,7 @@ import java.util.List;
 public class MusicPlayerService extends Service implements
         MediaPlayer.OnPreparedListener,
         MediaPlayer.OnErrorListener,
-        MediaPlayer.OnCompletionListener,
-        PlaylistFragment.Listener
+        MediaPlayer.OnCompletionListener
 {
 
     private MediaPlayer player;
@@ -30,11 +28,14 @@ public class MusicPlayerService extends Service implements
 
     private final IBinder musicBind = new MusicBinder();
 
-    @Override
-    public void playSong(Song song) {
+    public void setSongPosition(int songPosition){
+        this.songPosition = songPosition;
+    }
+
+    public void playSong() {
         player.reset();
         try{
-            player.setDataSource(getApplicationContext(), Uri.parse(song.getPath()));
+            player.setDataSource(getApplicationContext(), Uri.parse(playlist.get(songPosition).getPath()));
         }
         catch(Exception e){
             Log.e("MUSIC SERVICE", "Error setting data source", e);
@@ -97,4 +98,42 @@ public class MusicPlayerService extends Service implements
     public void onPrepared(MediaPlayer mediaPlayer) {
         mediaPlayer.start();
     }
+
+    public int getPosition(){
+        return player.getCurrentPosition();
+    }
+
+    public int getDuration(){
+        return player.getDuration();
+    }
+
+    public boolean isPlaying(){
+        return player.isPlaying();
+    }
+
+    public void pausePlayer(){
+        player.pause();
+    }
+
+    public void seek(int position){
+        player.seekTo(position);
+    }
+
+    public void start(){
+        player.start();
+    }
+
+    public void playPrev(){
+        songPosition--;
+        if(songPosition < 0)
+            songPosition=playlist.size()-1;
+        playSong();
+    }
+
+    public void playNext(){
+        songPosition++;
+        if(songPosition>=playlist.size()) songPosition=0;
+        playSong();
+    }
+
 }

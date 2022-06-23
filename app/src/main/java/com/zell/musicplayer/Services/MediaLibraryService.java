@@ -9,9 +9,6 @@ import android.provider.MediaStore;
 import com.zell.musicplayer.models.Song;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,9 +54,5 @@ public class MediaLibraryService {
         String album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
         String artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
         return new Song(data, title, album, artist);
-    }
-
-    public void checkPermissions(){
-
     }
 }
