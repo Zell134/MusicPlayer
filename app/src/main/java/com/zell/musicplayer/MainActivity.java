@@ -4,9 +4,16 @@ package com.zell.musicplayer;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.MediaController;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,13 +22,17 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.fragments.PlaylistFragment;
+import com.zell.musicplayer.models.MusicController;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl{
 
     private final int REQUEST_CODE = 1;
     private final String NOTIFICATION_ID = "Notification";
-    public static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+    private static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+
+    private MusicController musicController;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,8 +48,10 @@ public class MainActivity extends AppCompatActivity{
                         .add(R.id.playlist_container, PlaylistFragment.class, null)
                         .commit();
             }
+            setController();
         }
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -78,5 +91,92 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         }
+    }
+
+    private void setController(){
+        musicController = new MusicController(this);
+        musicController.setPrevNextListeners(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                playNext();
+            }
+        }, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                playPrev();
+            }
+        });
+
+        musicController.setMediaPlayer(this);
+        musicController.setAnchorView(findViewById(R.id.playlist_container));
+        musicController.setEnabled(true);
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public int getDuration() {
+        return 0;
+    }
+
+    @Override
+    public int getCurrentPosition() {
+        return 0;
+    }
+
+    @Override
+    public void seekTo(int i) {
+
+    }
+
+    @Override
+    public boolean isPlaying() {
+        return false;
+    }
+
+    @Override
+    public int getBufferPercentage() {
+        return 0;
+    }
+
+    @Override
+    public boolean canPause() {
+        return false;
+    }
+
+    @Override
+    public boolean canSeekBackward() {
+        return false;
+    }
+
+    @Override
+    public boolean canSeekForward() {
+        return false;
+    }
+
+    @Override
+    public int getAudioSessionId() {
+        return 0;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_shuffle:
+                //shuffle
+                break;
+            case R.id.action_end:
+                System.exit(0);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
