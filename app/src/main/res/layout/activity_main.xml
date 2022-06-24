@@ -8,9 +8,9 @@
     tools:context=".MainActivity">
 
     <LinearLayout
+        android:id="@+id/playlist_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/playlist_container"
         android:orientation="vertical" />
 
 </LinearLayout>

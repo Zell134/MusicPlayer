@@ -2,6 +2,8 @@ package com.zell.musicplayer.models;
 
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
+
 public class Song {
     private String path;
     private String title;
@@ -49,5 +51,11 @@ public class Song {
 
     public void setArtist(String artist) {
         this.artist = artist;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return artist + " - " + title + " (" + album + ")";
     }
 }

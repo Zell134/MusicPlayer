@@ -9,8 +9,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.MediaController;
@@ -26,21 +29,21 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.fragments.PlaylistFragment;
-import com.zell.musicplayer.models.MusicController;
 import com.zell.musicplayer.models.PlaylistViewModel;
 import com.zell.musicplayer.models.Song;
 
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl,
-        PlaylistFragment.Listener {
+public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl, PlaylistFragment.Listener {
 
     private final int REQUEST_CODE = 1;
     private final String NOTIFICATION_ID = "Notification";
-    private static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+    private static final String PERMISSION_STRING1 = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+    private static final String PERMISSION_STRING2 = android.Manifest.permission.WAKE_LOCK;
+    private static final String PERMISSION_STRING3 = android.Manifest.permission.FOREGROUND_SERVICE;
 
-    private MusicController musicController;
+    private MediaController musicController;
     private MusicPlayerService musicService;
     private Intent playIntent;
     private boolean musicBound=false;
@@ -50,8 +53,11 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if(ContextCompat.checkSelfPermission(this, PERMISSION_STRING) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{PERMISSION_STRING}, REQUEST_CODE);
+        if(ContextCompat.checkSelfPermission(this, PERMISSION_STRING1) != PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(this, PERMISSION_STRING2) != PackageManager.PERMISSION_GRANTED
+            &&ContextCompat.checkSelfPermission(this, PERMISSION_STRING3) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, new String[]{PERMISSION_STRING1, PERMISSION_STRING2, PERMISSION_STRING3}, REQUEST_CODE);
         }else
         {
 
@@ -95,6 +101,11 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         }
     };
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -103,7 +114,11 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
         switch (requestCode) {
             case REQUEST_CODE: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 &&
+                        grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults[1] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults[2] == PackageManager.PERMISSION_GRANTED
+                ) {
                     getSupportFragmentManager().beginTransaction()
                             .setReorderingAllowed(true)
                             .add(R.id.playlist_container, PlaylistFragment.class, null)
@@ -143,8 +158,12 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         super.onDestroy();
     }
 
-    private void setController(){
-        musicController = new MusicController(this);
+    private void setController() {
+        musicController = new MediaController(this) {
+            @Override
+            public void hide() {
+            }
+        };
         musicController.setPrevNextListeners(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -162,6 +181,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     }
 
 
+
     private void playNext(){
         musicService.playNext();
         musicController.show(0);
@@ -174,31 +194,45 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
     @Override
     public void start() {
-
+        musicService.start();
     }
 
     @Override
     public void pause() {
-
+        musicService.pausePlayer();
     }
 
     @Override
     public int getDuration() {
-        return 0;
+        if(musicService!=null && musicBound && musicService.isPlaying()) {
+            return musicService.getDuration();
+        }
+        else {
+            return 0;
+        }
+
     }
 
     @Override
     public int getCurrentPosition() {
-        return 0;
+        if(musicService!=null && musicBound && musicService.isPlaying()){
+            return musicService.getPosition();
+        }
+        else{
+            return 0;
+        }
     }
 
     @Override
     public void seekTo(int i) {
-
+        musicService.seek(i);
     }
 
     @Override
     public boolean isPlaying() {
+        if(musicService!=null && musicBound) {
+            return musicService.isPlaying();
+        }
         return false;
     }
 
@@ -209,17 +243,17 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
     @Override
     public boolean canPause() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean canSeekBackward() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean canSeekForward() {
-        return false;
+        return true;
     }
 
     @Override

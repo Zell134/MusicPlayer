@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
-    <string name="permission_denied">Необходим доступ к хранилищу данных</string>
-
+    <string name="permission_denied">Необходим доступ к хранилищу данных и возможность отображать всплывающие окна в фоновом режиме.</string>
+    <string name="playing">Проигрывается</string>
 <!--    Menu options-->
     <string name="shuffle_option">Shuffle</string>
     <string name="end_option">End</string>
