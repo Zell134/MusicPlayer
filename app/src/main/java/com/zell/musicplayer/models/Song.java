@@ -1,7 +1,5 @@
 package com.zell.musicplayer.models;
 
-import android.net.Uri;
-
 import androidx.annotation.NonNull;
 
 public class Song {

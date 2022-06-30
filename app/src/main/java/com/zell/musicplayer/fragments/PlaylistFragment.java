@@ -16,6 +16,7 @@ import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.PlaylistViewModel;
 import com.zell.musicplayer.models.Song;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PlaylistFragment extends ListFragment {
@@ -23,23 +24,22 @@ public class PlaylistFragment extends ListFragment {
     private Listener listener;
 
     public interface Listener{
-        void setSongPosition(int position);
         void playSong();
     }
 
     private PlaylistViewModel playlistViewModel;
     private MediaLibraryService mediaLibraryService;
     private Context context;
-    private long songIndex = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        List<Song> playlist;
         context = inflater.getContext();
         playlistViewModel = new ViewModelProvider(getActivity()).get(PlaylistViewModel.class);
+        List<Song> playlist = new ArrayList<>();
         playlist = getSongsList();
         playlistViewModel.setPlaylist(playlist);
+        playlistViewModel.setCurrentSongPosition(0);
         SongAdapter adapter = new SongAdapter(context, playlist);
         setListAdapter(adapter);
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -53,8 +53,7 @@ public class PlaylistFragment extends ListFragment {
 
     @Override
     public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {
-        songIndex = position;
-        listener.setSongPosition(position);
+        playlistViewModel.setCurrentSongPosition(position);
         listener.playSong();
     }
 

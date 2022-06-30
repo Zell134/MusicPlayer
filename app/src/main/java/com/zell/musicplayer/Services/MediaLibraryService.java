@@ -8,7 +8,6 @@ import android.provider.MediaStore;
 
 import com.zell.musicplayer.models.Song;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +20,6 @@ public class MediaLibraryService {
     }
 
     public List<Song> getAllMediaFromLibrary(Context context){
-        Song song = new Song();
         ContentResolver contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         List<Song> list = new ArrayList<>();
@@ -42,13 +40,13 @@ public class MediaLibraryService {
             } else {
                 return null;
             }
-        } catch (RuntimeException | UnsupportedEncodingException e) {
+        } catch (RuntimeException e) {
             e.printStackTrace();
         }
         return list;
     }
 
-    private Song getSongFromCursorRecord() throws UnsupportedEncodingException {
+    private Song getSongFromCursorRecord() {
         String data = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
         String title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
         String album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
