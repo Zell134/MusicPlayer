@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
                 MediaControllerCompat mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
                 MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
                 buildTransportControls();
-                playSong();
+//                playSong();
             } catch (RemoteException e) {
                 e.printStackTrace();
             }

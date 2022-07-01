@@ -5,16 +5,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.models.Song;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SongAdapter extends BaseAdapter {
-    private List<Song> songs;
+    private List<Song> songs = new ArrayList<>();
     private LayoutInflater songInf;
 
     public SongAdapter(Context context, List<Song> songs) {
@@ -39,18 +41,18 @@ public class SongAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View view, ViewGroup parent) {
-        //map to song layout
-        LinearLayout songLay = (LinearLayout)songInf.inflate(R.layout.song, parent, false);
-        //get title and artist views
-        TextView songView = (TextView)songLay.findViewById(R.id.song_title);
-        TextView artistView = (TextView)songLay.findViewById(R.id.song_artist);
-        //get song using position
+        LinearLayout songLayout = (LinearLayout) songInf.inflate(R.layout.song, parent, false);
+        ImageView icon = songLayout.findViewById(R.id.content_icon);
+        TextView songView = songLayout.findViewById(R.id.song_title);
+        TextView artistView = songLayout.findViewById(R.id.song_artist);
         Song currSong = songs.get(position);
-        //get title and artist strings
         songView.setText(currSong.getTitle());
         artistView.setText(currSong.getArtist());
-        //set position as tag
-        songLay.setTag(position);
-        return songLay;
+        if(currSong.isAudioFile()){
+            icon.setImageResource(R.drawable.music_icon);
+        }else{
+            icon.setImageResource(R.drawable.folder_icon);
+        }
+        return songLayout;
     }
 }
