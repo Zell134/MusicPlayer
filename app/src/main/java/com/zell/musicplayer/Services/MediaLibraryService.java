@@ -27,9 +27,7 @@ public class MediaLibraryService {
     };
 
     public static List<Song> getAllMediaFromLibrary(Context context){
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         List<Song> playlist = new ArrayList<>();
-        playlist.add(new Song(uri.toString(),"/","","",false));
         getMediaFiles(playlist, "",context);
         return playlist;
     }
@@ -49,13 +47,17 @@ public class MediaLibraryService {
     private static void getMediaFiles(List<Song> playlist, String filePath, Context context){
         ContentResolver contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.DATA + " like " + "'%" + filePath + "/%[^'/']'";
+        String selection = MediaStore.Audio.Media.DATA + " LIKE ? AND " + MediaStore.Audio.Media.DATA + " NOT LIKE ? ";
+        String[] selectionArgs = new String[]{
+                "%" + filePath + "%",
+                "%" + filePath + "/%/%"
+        };
         try{
             if(filePath.equals("")){
                 cursor = contentResolver.query(uri, projection, null, null, null);
 
             }else {
-                cursor = contentResolver.query(uri, projection, selection, null, null);
+                cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
             }
             if (cursor!=null && cursor.moveToFirst()) {
                 playlist.add(getSongFromCursorRecord());

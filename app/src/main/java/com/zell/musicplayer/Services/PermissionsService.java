@@ -20,17 +20,12 @@ public class PermissionsService {
 
     private static final int REQUEST_CODE = 1;
     private static final String NOTIFICATION_ID = "Notification";
-    private static final String PERMISSION_STRING1 = android.Manifest.permission.READ_EXTERNAL_STORAGE;
-    private static final String PERMISSION_STRING2 = android.Manifest.permission.WAKE_LOCK;
-    private static final String PERMISSION_STRING3 = android.Manifest.permission.FOREGROUND_SERVICE;
+    private static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
 
     public static boolean checkPermissions(AppCompatActivity activity) {
         int i = 0;
-        if (ContextCompat.checkSelfPermission(activity, PERMISSION_STRING1) != PackageManager.PERMISSION_GRANTED
-                || ContextCompat.checkSelfPermission(activity, PERMISSION_STRING2) != PackageManager.PERMISSION_GRANTED
-                || ContextCompat.checkSelfPermission(activity, PERMISSION_STRING3) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(activity, new String[]{PERMISSION_STRING1, PERMISSION_STRING2, PERMISSION_STRING3}, REQUEST_CODE);
+        if (ContextCompat.checkSelfPermission(activity, PERMISSION_STRING) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(activity, new String[]{PERMISSION_STRING}, REQUEST_CODE);
             return false;
         }else{
             return true;
@@ -42,10 +37,7 @@ public class PermissionsService {
         switch (requestCode) {
             case REQUEST_CODE: {
                 if (grantResults.length > 0 &&
-                        grantResults[0] == PackageManager.PERMISSION_GRANTED &&
-                        grantResults[1] == PackageManager.PERMISSION_GRANTED &&
-                        grantResults[2] == PackageManager.PERMISSION_GRANTED
-                ) {
+                        grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     return true;
                 }
                 else {

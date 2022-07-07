@@ -1,6 +1,8 @@
 package com.zell.musicplayer.Services;
 
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -14,6 +16,7 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.view.KeyEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,6 +25,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 
+import com.zell.musicplayer.MainActivity;
 import com.zell.musicplayer.R;
 
 import java.io.IOException;
@@ -58,10 +62,31 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         initMediaSession();
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        MediaButtonReceiver.handleIntent(mediaSession, intent);
+        return super.onStartCommand(intent, flags, startId);
+    }
+
     private void initMediaSession() {
         mediaSession = new MediaSessionCompat(this, getApplicationContext().getString(R.string.app_name));
+
+        Intent mediaButtonIntent = new Intent(
+                Intent.ACTION_MEDIA_BUTTON, null, getApplicationContext(), MediaButtonReceiver.class);
+        mediaSession.setMediaButtonReceiver(
+                PendingIntent.getBroadcast(getApplicationContext(), 0, mediaButtonIntent, 0));
+
         mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSession.setCallback(mediaSessionCallback);
+        Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
+        mediaSession.setSessionActivity(PendingIntent.getActivity(getApplicationContext(), 0, activityIntent, 0));
+        PlaybackStateCompat.Builder playbackStateBuilder = new PlaybackStateCompat.Builder();
+        playbackStateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY |
+                PlaybackStateCompat.ACTION_PAUSE |
+                PlaybackStateCompat.ACTION_PLAY_PAUSE|
+                PlaybackStateCompat.ACTION_STOP
+        );
+        mediaSession.setPlaybackState(playbackStateBuilder.build());
         setMediaPlaybackState(PlaybackStateCompat.STATE_NONE);
         setSessionToken(mediaSession.getSessionToken());
     }
@@ -90,17 +115,20 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     MediaSessionCompat.Callback mediaSessionCallback = new MediaSessionCompat.Callback() {
         @Override
         public void onPlay() {
+            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
             if (ifAudioFocusGranted()) {
                 if(playbackState == PlaybackStateCompat.STATE_PAUSED) {
                     mediaSession.setActive(true);
                     setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                     player.start();
+                    showPlayingNotification();
                 }
             }
         }
 
         @Override
         public void onPlayFromUri(Uri uri, Bundle bundle) {
+            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
             if (ifAudioFocusGranted()) {
                 setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                 player.reset();
@@ -120,14 +148,14 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         }
         @Override
         public void onStop() {
-            stopSelf();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 audioManager.abandonAudioFocusRequest(audioFocusRequest);
             }
             mediaSession.setActive(false);
             setMediaPlaybackState(PlaybackStateCompat.STATE_STOPPED);
             player.stop();
-//            player.release();
+            NotificationManagerCompat.from(MusicPlayerService.this).cancel(NOTIFY_ID);
+            stopSelf();
         }
     };
 
@@ -136,11 +164,13 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         public void onAudioFocusChange(int focusState) {
             switch(focusState){
                 case AudioManager.AUDIOFOCUS_GAIN:
-                    mediaSession.setActive(true);
+                    mediaSessionCallback.onPlay();
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS:
-                    mediaSession.setActive(false);
-                    setMediaPlaybackState(PlaybackStateCompat.STATE_STOPPED);
+                    mediaSessionCallback.onPause();
+                    break;
+                default:
+                    mediaSessionCallback.onPause();
                     break;
             }
         }
@@ -191,15 +221,15 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         playbackState = state;
         switch(state) {
             case PlaybackStateCompat.STATE_STOPPED: {
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_STOP);
+                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_STOP);
                 break;
             }
             case PlaybackStateCompat.STATE_PLAYING: {
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY);
+                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY);
                 break;
             }
             case PlaybackStateCompat.STATE_PAUSED:{
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PAUSE);
+                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PAUSE);
                 break;
             }
         }
@@ -211,25 +241,22 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
 
         NotificationCompat.Builder builder = MediaStyleHelper.from(this, mediaSession);
 
-        if( builder == null ) {
-            return;
-        }
-
-        builder.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_pause, "Pause", MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE)));
-        builder.setStyle(new androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0).setMediaSession(mediaSession.getSessionToken()));
-        builder.setSmallIcon(R.mipmap.ic_launcher);
-        NotificationManagerCompat.from(MusicPlayerService.this).notify(1, builder.build());
+        builder.addAction(
+                new NotificationCompat.Action(android.R.drawable.ic_media_pause,
+                        getResources().getString(R.string.pause),
+                        MediaStyleHelper.getActionIntent(this, KeyEvent.KEYCODE_MEDIA_PAUSE))
+                );
+    NotificationManagerCompat.from(this).notify(NOTIFY_ID, builder.build());
     }
 
     private void showPausedNotification() {
-        NotificationCompat.Builder builder = MediaStyleHelper.from(this, mediaSession);
-        if( builder == null ) {
-            return;
-        }
-
-        builder.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_play, "Play", MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE)));
-        builder.setStyle(new androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0).setMediaSession(mediaSession.getSessionToken()));
-        builder.setSmallIcon(R.mipmap.ic_launcher);
+        NotificationCompat.Builder builder = MediaStyleHelper.from(this.getApplicationContext(), mediaSession);
+        builder.addAction(
+                new NotificationCompat.Action(
+                        android.R.drawable.ic_media_play,
+                        getResources().getString(R.string.play),
+                        MediaStyleHelper.getActionIntent(this, KeyEvent.KEYCODE_MEDIA_PLAY))
+                );
         NotificationManagerCompat.from(this).notify(NOTIFY_ID, builder.build());
     }
 
