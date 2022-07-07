@@ -1,53 +1,54 @@
 package com.zell.musicplayer.models;
 
-import android.net.Uri;
+import androidx.annotation.NonNull;
 
 public class Song {
     private String path;
     private String title;
     private String album;
     private String artist;
+    private boolean isAudioFile;
 
     public Song() {
 
     }
 
-    public Song(String path, String title, String album, String artist) {
+    /**
+     * @param path
+     * @param title
+     * @param album
+     * @param artist
+     */
+    public Song(String path, String title, String album, String artist, boolean isAudioFile) {
         this.path = path;
         this.title = title;
         this.album = album;
         this.artist = artist;
+        this.isAudioFile = isAudioFile;
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
-
     public String getTitle() {
         return title;
     }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getAlbum() {
         return album;
-    }
-
-    public void setAlbum(String album) {
-        this.album = album;
     }
 
     public String getArtist() {
         return artist;
     }
 
-    public void setArtist(String artist) {
-        this.artist = artist;
+    public boolean isAudioFile() {
+        return isAudioFile;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return artist + " - " + title + " (" + album + ")";
     }
 }

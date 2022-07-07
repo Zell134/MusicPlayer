@@ -1,252 +1,259 @@
 package com.zell.musicplayer;
 
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
+import static com.zell.musicplayer.Services.PermissionsService.checkPermissions;
+
 import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
+import android.os.RemoteException;
+import android.provider.MediaStore;
+import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.MediaController;
-import android.widget.Toast;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
-import androidx.lifecycle.Observer;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.Services.MusicPlayerService;
+import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.fragments.PlaylistFragment;
-import com.zell.musicplayer.models.MusicController;
-import com.zell.musicplayer.models.PlaylistViewModel;
 import com.zell.musicplayer.models.Song;
+import com.zell.musicplayer.models.StateViewModel;
 
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl,
-        PlaylistFragment.Listener {
+public class MainActivity extends AppCompatActivity implements PlaylistFragment.Listener, NavigationView.OnNavigationItemSelectedListener{
 
-    private final int REQUEST_CODE = 1;
-    private final String NOTIFICATION_ID = "Notification";
-    private static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+    public static final String LIBRARY_TYPE_MEDIA_LIBRARY = "MediaLibrary";
+    public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
 
-    private MusicController musicController;
-    private MusicPlayerService musicService;
-    private Intent playIntent;
-    private boolean musicBound=false;
+    private MediaBrowserCompat mediaBrowser;
+    private List<Song> playlist;
+    private int currentSongPosition;
+    private int currentState;
+    private StateViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        viewModel = new ViewModelProvider(this).get(StateViewModel.class);
+        viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
 
-        if(ContextCompat.checkSelfPermission(this, PERMISSION_STRING) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{PERMISSION_STRING}, REQUEST_CODE);
-        }else
-        {
+        if (checkPermissions(this)) {
+            setup();
+        }
 
-            if(playIntent==null){
-                playIntent = new Intent(this, MusicPlayerService.class);
-                bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
-                startService(playIntent);
+        mediaBrowser = new MediaBrowserCompat(this,
+                new ComponentName(this, MusicPlayerService.class),
+                connectionCalback,
+                null);
 
-            if (savedInstanceState == null) {
-                getSupportFragmentManager().beginTransaction()
-                        .setReorderingAllowed(true)
-                        .add(R.id.playlist_container, PlaylistFragment.class, null)
-                        .commit();
-            }
-            setController();
-            }
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.nav_open_drawer, R.string.nav_close_drawer);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if(!mediaBrowser.isConnected()) {
+            mediaBrowser.connect();
         }
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (MediaControllerCompat.getMediaController(MainActivity.this) != null) {
+            MediaControllerCompat.getMediaController(MainActivity.this).unregisterCallback(controllerCallback);
+        }
+    }
 
-    private ServiceConnection musicConnection = new ServiceConnection() {
+    @Override
+    protected void onDestroy() {
+        MediaControllerCompat
+                .getMediaController(MainActivity.this)
+                .getTransportControls()
+                .stop();
+        mediaBrowser.disconnect();
+        super.onDestroy();
+    }
+
+    private final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            MusicPlayerService.MusicBinder binder = (MusicPlayerService.MusicBinder) iBinder;
-            musicService = binder.getService();
-            musicBound = true;
-            new ViewModelProvider(MainActivity.this)
-                    .get(PlaylistViewModel.class)
-                    .getPlaylist()
-                    .observe(MainActivity.this, new Observer<List<Song>>() {
-                        @Override
-                        public void onChanged(List<Song> songs) {
-                            musicService.setPlaylist(songs);
-                        }
-                    });
+        public void onConnected() {
+            try {
+                MediaControllerCompat mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
+                MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
+                buildTransportControls();
+//                playSong();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
 
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            musicBound = false;
-        }
     };
 
+    private void buildTransportControls() {
+        ImageButton playButton = findViewById(R.id.play);
+        ImageButton stopButton = findViewById(R.id.stop);
+        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
+
+        playButton.setOnClickListener(view -> {
+            switch (currentState) {
+
+                case PlaybackStateCompat.STATE_NONE:
+                case PlaybackStateCompat.STATE_STOPPED: {
+                    playSong();
+                    break;
+                }
+                case PlaybackStateCompat.STATE_PLAYING: {
+                    mediaController.getTransportControls().pause();
+                    break;
+                } case PlaybackStateCompat.STATE_PAUSED: {
+                    mediaController.getTransportControls().play();
+                }
+            }
+        });
+
+
+        stopButton.setOnClickListener(view -> {
+            if (currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
+                mediaController.getTransportControls().stop();
+            }
+        });
+
+        mediaController.registerCallback(controllerCallback);
+    }
+
+    MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
+        @Override
+        public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            super.onPlaybackStateChanged(state);
+            currentState = state.getState();
+            ImageButton playPauseButton = findViewById(R.id.play);
+
+            switch (currentState) {
+                case PlaybackStateCompat.STATE_NONE:
+                case PlaybackStateCompat.STATE_STOPPED: {
+                    playPauseButton.setImageResource(R.drawable.play_icon);
+                    break;
+                }
+                case PlaybackStateCompat.STATE_PLAYING: {
+                    playPauseButton.setImageResource(R.drawable.pause_icon);
+                    break;
+                }
+                case PlaybackStateCompat.STATE_PAUSED:{
+                    playPauseButton.setImageResource(R.drawable.play_icon);
+                    break;
+                }
+            }
+        }
+
+        @Override
+        public void onMetadataChanged(MediaMetadataCompat metadata) {
+            super.onMetadataChanged(metadata);
+        }
+
+        @Override
+        public void onSessionDestroyed() {
+
+        }
+    };
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        switch (requestCode) {
-            case REQUEST_CODE: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    getSupportFragmentManager().beginTransaction()
-                            .setReorderingAllowed(true)
-                            .add(R.id.playlist_container, PlaylistFragment.class, null)
-                            .commit();                }
-                else {
-                    NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_ID)
-                            .setSmallIcon(android.R.drawable.ic_menu_compass)
-                            .setContentTitle(getResources().getString(R.string.app_name))
-                            .setContentText(getResources().getString(R.string.permission_denied))
-                            .setPriority(NotificationCompat.PRIORITY_HIGH)
-                            .setVibrate(new long[]{1000, 1000})
-                            .setAutoCancel(true);
-                    Intent actionIntent = new Intent(this, MainActivity.class);
-                    PendingIntent actionPendingIntent = PendingIntent.getActivity(
-                            this,
-                            0,
-                            actionIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT);
-                    builder.setContentIntent(actionPendingIntent);
-                    NotificationManager notificationManager =
-                            (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_ID, "Permission_denied", NotificationManager.IMPORTANCE_HIGH);
-                        notificationManager.createNotificationChannel(notificationChannel);
-                    }
-                    notificationManager.notify(0, builder.build());
-                    Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show();
-                }
-            }
+        if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
+            setup();
+        }else{
+            checkPermissions(this);
         }
     }
 
-    @Override
-    public void onDestroy() {
-        stopService(playIntent);
-        musicService=null;
-        super.onDestroy();
-    }
+    private void setup() {
+        getSupportFragmentManager().beginTransaction()
+                .setReorderingAllowed(true)
+                .add(R.id.playlist_container, PlaylistFragment.class, null)
+                .commit();
 
-    private void setController(){
-        musicController = new MusicController(this);
-        musicController.setPrevNextListeners(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playNext();
-            }
-        }, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playPrevious();
-            }
-        });
-        musicController.setMediaPlayer(this);
-        musicController.setAnchorView(findViewById(R.id.playlist_container));
-        musicController.setEnabled(true);
-    }
-
-
-    private void playNext(){
-        musicService.playNext();
-        musicController.show(0);
-    }
-
-    private void playPrevious(){
-        musicService.playPrev();
-        musicController.show(0);
-    }
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public int getDuration() {
-        return 0;
-    }
-
-    @Override
-    public int getCurrentPosition() {
-        return 0;
-    }
-
-    @Override
-    public void seekTo(int i) {
-
-    }
-
-    @Override
-    public boolean isPlaying() {
-        return false;
-    }
-
-    @Override
-    public int getBufferPercentage() {
-        return 0;
-    }
-
-    @Override
-    public boolean canPause() {
-        return false;
-    }
-
-    @Override
-    public boolean canSeekBackward() {
-        return false;
-    }
-
-    @Override
-    public boolean canSeekForward() {
-        return false;
-    }
-
-    @Override
-    public int getAudioSessionId() {
-        return 0;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_shuffle:
-                //shuffle
-                break;
-            case R.id.action_end:
-                System.exit(0);
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void setSongPosition(int position) {
-        musicService.setSongPosition(position);
     }
 
     @Override
     public void playSong() {
-        musicService.playSong();
+        Uri uri = Uri.parse(playlist.get(currentSongPosition).getPath());
+        MediaControllerCompat.getMediaController(MainActivity.this)
+                    .getTransportControls()
+                    .playFromUri(uri, getBundle());
+    }
+
+    @Override
+    public void setPlaylist(List<Song> playlist){
+        this.playlist = playlist;
+    }
+    @Override
+    public void setCurrentSongPosition(int currentSongPosition){
+        this.currentSongPosition = currentSongPosition;
+    }
+
+    private Bundle getBundle(){
+        Bundle bundle = new Bundle();
+        bundle.putString(MediaStore.Audio.Media.DATA, playlist.get(currentSongPosition).getPath());
+        bundle.putString(MediaStore.Audio.Media.TITLE, playlist.get(currentSongPosition).getTitle());
+        bundle.putString(MediaStore.Audio.Media.ALBUM, playlist.get(currentSongPosition).getAlbum());
+        bundle.putString(MediaStore.Audio.Media.ARTIST, playlist.get(currentSongPosition).getArtist());
+        return bundle;
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        switch(item.getItemId()){
+            case(R.id.all_media):
+                viewModel.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
+                break;
+            case(R.id.external_storage):
+                viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
+                break;
+            case(R.id.exit):
+                onDestroy();
+                System.exit(0);
+                break;
+        }
+        item.setChecked(true);
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 }
