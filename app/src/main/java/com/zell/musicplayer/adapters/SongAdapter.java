@@ -10,16 +10,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.zell.musicplayer.R;
+import com.zell.musicplayer.models.Item;
 import com.zell.musicplayer.models.Song;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SongAdapter extends BaseAdapter {
-    private List<Song> songs;
+    private List<Item> songs;
     private LayoutInflater songInf;
 
-    public SongAdapter(Context context, List<Song> songs) {
+    public SongAdapter(Context context, List<Item> songs) {
         this.songs = songs;
         songInf=LayoutInflater.from(context);
     }
@@ -45,9 +45,11 @@ public class SongAdapter extends BaseAdapter {
         ImageView icon = songLayout.findViewById(R.id.content_icon);
         TextView songView = songLayout.findViewById(R.id.song_title);
         TextView artistView = songLayout.findViewById(R.id.song_artist);
-        Song currSong = songs.get(position);
+        Item currSong = songs.get(position);
         songView.setText(currSong.getTitle());
-        artistView.setText(currSong.getArtist());
+        if(currSong.isAudioFile()) {
+           artistView.setText(((Song)currSong).getArtist());
+        }
         if(currSong.isAudioFile()){
             icon.setImageResource(R.drawable.music_icon);
         }else{

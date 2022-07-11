@@ -13,6 +13,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
@@ -21,28 +22,37 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.tabs.TabLayout;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.PermissionsService;
-import com.zell.musicplayer.fragments.PlaylistFragment;
+import com.zell.musicplayer.fragments.AllLibraryFragment;
+import com.zell.musicplayer.fragments.BaseFragment;
+import com.zell.musicplayer.fragments.ExternalStorageFragment;
+import com.zell.musicplayer.fragments.MainFragment;
+import com.zell.musicplayer.models.Item;
 import com.zell.musicplayer.models.Song;
 import com.zell.musicplayer.models.StateViewModel;
 
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements PlaylistFragment.Listener, NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity implements AllLibraryFragment.Listener, NavigationView.OnNavigationItemSelectedListener{
 
     public static final String LIBRARY_TYPE_MEDIA_LIBRARY = "MediaLibrary";
     public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
 
     private MediaBrowserCompat mediaBrowser;
-    private List<Song> playlist;
+    private List<Item> playlist;
     private int currentSongPosition;
     private int currentState;
     private StateViewModel viewModel;
+    private String LibraryType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,9 +60,10 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
         setContentView(R.layout.activity_main);
         viewModel = new ViewModelProvider(this).get(StateViewModel.class);
         viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
+        LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
 
         if (checkPermissions(this)) {
-            setup();
+            setMainFragment();
         }
 
         mediaBrowser = new MediaBrowserCompat(this,
@@ -63,13 +74,13 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.nav_open_drawer, R.string.nav_close_drawer);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
 
@@ -186,18 +197,10 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
-            setup();
+            setMainFragment();
         }else{
             checkPermissions(this);
         }
-    }
-
-    private void setup() {
-        getSupportFragmentManager().beginTransaction()
-                .setReorderingAllowed(true)
-                .add(R.id.playlist_container, PlaylistFragment.class, null)
-                .commit();
-
     }
 
     @Override
@@ -209,9 +212,10 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
     }
 
     @Override
-    public void setPlaylist(List<Song> playlist){
+    public void setPlaylist(List<Item> playlist){
         this.playlist = playlist;
     }
+
     @Override
     public void setCurrentSongPosition(int currentSongPosition){
         this.currentSongPosition = currentSongPosition;
@@ -219,10 +223,11 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
 
     private Bundle getBundle(){
         Bundle bundle = new Bundle();
-        bundle.putString(MediaStore.Audio.Media.DATA, playlist.get(currentSongPosition).getPath());
-        bundle.putString(MediaStore.Audio.Media.TITLE, playlist.get(currentSongPosition).getTitle());
-        bundle.putString(MediaStore.Audio.Media.ALBUM, playlist.get(currentSongPosition).getAlbum());
-        bundle.putString(MediaStore.Audio.Media.ARTIST, playlist.get(currentSongPosition).getArtist());
+        Song song = (Song) playlist.get(currentSongPosition);
+        bundle.putString(MediaStore.Audio.Media.DATA, song.getPath());
+        bundle.putString(MediaStore.Audio.Media.TITLE, song.getTitle());
+        bundle.putString(MediaStore.Audio.Media.ALBUM, song.getAlbum());
+        bundle.putString(MediaStore.Audio.Media.ARTIST, song.getArtist());
         return bundle;
     }
 
@@ -231,9 +236,11 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
         switch(item.getItemId()){
             case(R.id.all_media):
                 viewModel.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
+                LibraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
                 break;
             case(R.id.external_storage):
                 viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
+                LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
                 break;
             case(R.id.exit):
                 onDestroy();
@@ -241,19 +248,56 @@ public class MainActivity extends AppCompatActivity implements PlaylistFragment.
                 break;
         }
         item.setChecked(true);
+        setMainFragment();
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
         }
     }
+
+    public void setMainFragment(){
+        TabLayout tabs = findViewById(R.id.tabs);
+        switch (LibraryType) {
+            case LIBRARY_TYPE_EXTERNAL_STORAGE:
+                setFragment(new ExternalStorageFragment());
+                int count = tabs.getTabCount();
+                if(count>0) {
+                    for (int i = 1; i < count; i++) {
+                        tabs.removeTabAt(i);
+                    }
+                    tabs.getTabAt(0).setText(getResources().getString(R.string.external_storage));
+                }else {
+                    tabs.addTab(tabs.newTab().setText(getResources().getString(R.string.external_storage)));
+                }
+                break;
+            case LIBRARY_TYPE_MEDIA_LIBRARY:
+                setFragment(new MainFragment());
+                break;
+        }
+    }
+
+    private void setFragment(Fragment fragment){
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        if(fragmentManager.getFragments().size() == 0){
+            fragmentManager.beginTransaction()
+                    .add(R.id.main_fragment, fragment,null)
+                    .commit();
+        }else {
+            fragmentManager.beginTransaction()
+                    .detach(fragmentManager.getFragments().get(0))
+                    .replace(R.id.main_fragment, fragment,null)
+                    .commit();
+        }
+    }
+
 }
