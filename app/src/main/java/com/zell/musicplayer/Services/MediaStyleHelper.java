@@ -5,16 +5,12 @@ import static android.content.Context.NOTIFICATION_SERVICE;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.view.KeyEvent;
 
 import androidx.core.app.NotificationCompat;
 import androidx.media.session.MediaButtonReceiver;
@@ -26,7 +22,7 @@ public class MediaStyleHelper {
     private static final String NOTIFY_ID="com.zell.musicplayer.Services";
 
     public static NotificationCompat.Builder from(
-            Context context, MediaSessionCompat mediaSession) {
+            MusicPlayerService context, MediaSessionCompat mediaSession) {
 
         MediaControllerCompat controller = mediaSession.getController();
         MediaMetadataCompat mediaMetadata = controller.getMetadata();
@@ -66,20 +62,13 @@ public class MediaStyleHelper {
                 .setSmallIcon(R.drawable.audio)
                 .setContentIntent(controller.getSessionActivity())
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setDeleteIntent(getActionIntent(context, KeyEvent.KEYCODE_MEDIA_STOP))
+                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(0)
                 .setMediaSession(mediaSession.getSessionToken())
                 .setShowCancelButton(true)
-                .setCancelButtonIntent(MediaStyleHelper.getActionIntent(context, KeyEvent.KEYCODE_MEDIA_STOP))
+                .setCancelButtonIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
         );
         return builder;
-    }
-
-    public static PendingIntent getActionIntent(Context context, int mediaKeyEvent){
-        Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-        intent.setPackage(context.getPackageName());
-        intent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, mediaKeyEvent));
-        return PendingIntent.getBroadcast(context, mediaKeyEvent, intent, 0);
     }
 }

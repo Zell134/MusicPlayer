@@ -244,18 +244,18 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         builder.addAction(
                 new NotificationCompat.Action(android.R.drawable.ic_media_pause,
                         getResources().getString(R.string.pause),
-                        MediaStyleHelper.getActionIntent(this, KeyEvent.KEYCODE_MEDIA_PAUSE))
+                        MediaButtonReceiver.buildMediaButtonPendingIntent(MusicPlayerService.this,  PlaybackStateCompat.ACTION_PAUSE))
                 );
     NotificationManagerCompat.from(this).notify(NOTIFY_ID, builder.build());
     }
 
     private void showPausedNotification() {
-        NotificationCompat.Builder builder = MediaStyleHelper.from(this.getApplicationContext(), mediaSession);
+        NotificationCompat.Builder builder = MediaStyleHelper.from(this, mediaSession);
         builder.addAction(
                 new NotificationCompat.Action(
                         android.R.drawable.ic_media_play,
                         getResources().getString(R.string.play),
-                        MediaStyleHelper.getActionIntent(this, KeyEvent.KEYCODE_MEDIA_PLAY))
+                        MediaButtonReceiver.buildMediaButtonPendingIntent(MusicPlayerService.this,  PlaybackStateCompat.ACTION_PLAY))
                 );
         NotificationManagerCompat.from(this).notify(NOTIFY_ID, builder.build());
     }
