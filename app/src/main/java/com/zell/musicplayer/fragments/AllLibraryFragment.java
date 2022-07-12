@@ -36,8 +36,6 @@ public class AllLibraryFragment extends BaseFragment {
 
     protected void updatePlaylist(){
         playlist = getSongsList();
-        adapter = new SongAdapter(context, playlist);
-        adapter.notifyDataSetChanged();
-        setListAdapter(adapter);
+        updateAdapter();
     }
 }

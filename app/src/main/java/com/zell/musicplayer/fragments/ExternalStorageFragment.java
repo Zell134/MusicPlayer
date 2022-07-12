@@ -18,6 +18,7 @@ public class ExternalStorageFragment extends BaseFragment {
 
     @Override
     public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {
+
         Item item = playlist.get(position);
         if(item.isAudioFile()){
             listener.setPlaylist(playlist);
@@ -36,9 +37,7 @@ public class ExternalStorageFragment extends BaseFragment {
             }else {
                 playlist = getFilelist(item.getPath());
             }
-            adapter = new SongAdapter(context, playlist);
-            adapter.notifyDataSetChanged();
-            setListAdapter(adapter);
+            updateAdapter();
         }
     }
 
@@ -47,12 +46,10 @@ public class ExternalStorageFragment extends BaseFragment {
     }
 
     protected void updatePlaylist(){
-            if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-                String path = Environment.getStorageDirectory().getAbsolutePath();
-                playlist = getFilelist(path);
-            }
-        adapter = new SongAdapter(context, playlist);
-        adapter.notifyDataSetChanged();
-        setListAdapter(adapter);
+        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            String path = Environment.getStorageDirectory().getAbsolutePath();
+            playlist = getFilelist(path);
+        }
+        updateAdapter();
     }
 }

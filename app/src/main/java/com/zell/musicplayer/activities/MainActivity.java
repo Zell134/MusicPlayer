@@ -4,10 +4,12 @@ package com.zell.musicplayer.activities;
 import static com.zell.musicplayer.Services.PermissionsService.checkPermissions;
 
 import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.RemoteException;
-import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -30,12 +32,12 @@ import com.google.android.material.tabs.TabLayout;
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.PermissionsService;
+import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.fragments.AllLibraryFragment;
 import com.zell.musicplayer.fragments.ExternalStorageFragment;
 import com.zell.musicplayer.fragments.MainFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.models.Item;
-import com.zell.musicplayer.models.Song;
 import com.zell.musicplayer.models.StateViewModel;
 
 import java.util.List;
@@ -46,9 +48,9 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     public static final String LIBRARY_TYPE_MEDIA_LIBRARY = "MediaLibrary";
     public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
 
+    private PlaylistService playlistService;
+    private boolean bound;
     private MediaBrowserCompat mediaBrowser;
-    private List<Item> playlist;
-    private int currentSongPosition;
     private int currentState;
     private StateViewModel viewModel;
     private String LibraryType;
@@ -60,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         viewModel = new ViewModelProvider(this).get(StateViewModel.class);
         viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
         LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
+
+        connectToMusicRepositoryService();
 
         if (checkPermissions(this)) {
             setMainFragment();
@@ -91,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     @Override
     protected void onStart() {
         super.onStart();
+
         if(!mediaBrowser.isConnected()) {
             mediaBrowser.connect();
         }
@@ -102,6 +107,10 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         if (MediaControllerCompat.getMediaController(MainActivity.this) != null) {
             MediaControllerCompat.getMediaController(MainActivity.this).unregisterCallback(controllerCallback);
         }
+        if(bound){
+            unbindService(serviceConnection);
+            bound=false;
+        }
     }
 
     @Override
@@ -112,6 +121,11 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                 .stop();
         mediaBrowser.disconnect();
         super.onDestroy();
+    }
+
+    private void connectToMusicRepositoryService(){
+        Intent intent = new Intent(this, PlaylistService.class);
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
     private final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
@@ -126,7 +140,20 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                 e.printStackTrace();
             }
         }
+    };
 
+    ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
+            playlistService = musicRepositoryBinder.getService();
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            bound= false;
+        }
     };
 
     private void buildTransportControls() {
@@ -208,30 +235,20 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
     @Override
     public void playSong() {
-        Uri uri = Uri.parse(playlist.get(currentSongPosition).getPath());
+        Uri uri = Uri.parse(playlistService.getCurrentSong().getPath());
         MediaControllerCompat.getMediaController(MainActivity.this)
                     .getTransportControls()
-                    .playFromUri(uri, getBundle());
+                    .playFromUri(uri, new Bundle());
     }
 
     @Override
     public void setPlaylist(List<Item> playlist){
-        this.playlist = playlist;
+        playlistService.setPlyalist(playlist);
     }
 
     @Override
     public void setCurrentSongPosition(int currentSongPosition){
-        this.currentSongPosition = currentSongPosition;
-    }
-
-    private Bundle getBundle(){
-        Bundle bundle = new Bundle();
-        Song song = (Song) playlist.get(currentSongPosition);
-        bundle.putString(MediaStore.Audio.Media.DATA, song.getPath());
-        bundle.putString(MediaStore.Audio.Media.TITLE, song.getTitle());
-        bundle.putString(MediaStore.Audio.Media.ALBUM, song.getAlbum());
-        bundle.putString(MediaStore.Audio.Media.ARTIST, song.getArtist());
-        return bundle;
+        playlistService.setCurrentSongPosition(currentSongPosition);
     }
 
     @Override

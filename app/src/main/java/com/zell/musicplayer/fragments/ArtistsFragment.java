@@ -43,9 +43,7 @@ public class ArtistsFragment extends BaseFragment {
                     playlist = MediaLibraryService.getAlbumsOfArtist(context, item.getTitle());
                 }
             }
-            adapter = new SongAdapter(context, playlist);
-            adapter.notifyDataSetChanged();
-            setListAdapter(adapter);
+            updateAdapter();
         }
     }
 
@@ -55,8 +53,6 @@ public class ArtistsFragment extends BaseFragment {
 
     protected void updatePlaylist(){
         playlist = getArtistList();
-        adapter = new SongAdapter(context, playlist);
-        adapter.notifyDataSetChanged();
-        setListAdapter(adapter);
+        updateAdapter();
     }
 }

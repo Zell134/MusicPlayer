@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.ListFragment;
 
+import com.zell.musicplayer.Services.MusicPlayerService;
+import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
@@ -30,6 +32,7 @@ public abstract class BaseFragment  extends ListFragment {
     protected List<Item> playlist = new ArrayList<>();
     protected SongAdapter adapter;
     protected View currentSelectedView;
+    PlaylistService service;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -47,6 +50,12 @@ public abstract class BaseFragment  extends ListFragment {
     @Override
     public void onStart() {
         super.onStart();
+    }
+
+    protected void updateAdapter(){
+        adapter = new SongAdapter(context, playlist);
+        adapter.notifyDataSetChanged();
+        setListAdapter(adapter);
     }
 
 }

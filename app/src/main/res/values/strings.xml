@@ -11,6 +11,7 @@
     <string name="previous">Previous</string>
     <string name="next">Next</string>
     <string name="play">Play</string>
+    <string name="play_pause">Play/Pause</string>
     <string name="pause">Pause</string>
     <string name="stop">Stop</string>
     <!--    Player-->

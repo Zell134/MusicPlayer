@@ -1,8 +1,10 @@
 package com.zell.musicplayer.Services;
 
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -10,8 +12,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.PowerManager;
-import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -24,8 +26,9 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 
-import com.zell.musicplayer.activities.MainActivity;
 import com.zell.musicplayer.R;
+import com.zell.musicplayer.activities.MainActivity;
+import com.zell.musicplayer.models.Song;
 
 import java.io.IOException;
 import java.util.List;
@@ -41,6 +44,8 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     private MediaPlayer player;
     private AudioFocusRequest audioFocusRequest;
     private long playbackState;
+    private PlaylistService playlistService;
+    private boolean bound;
 
     @Override
     public void onCreate() {
@@ -59,12 +64,18 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         }
         initMediaPlayer();
         initMediaSession();
+        connectToMusicRepositoryService();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         MediaButtonReceiver.handleIntent(mediaSession, intent);
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void connectToMusicRepositoryService(){
+        Intent intent = new Intent(this, PlaylistService.class);
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
     private void initMediaSession() {
@@ -99,6 +110,8 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         }
     }
 
+
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -109,6 +122,10 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             player.release();
         }
         NotificationManagerCompat.from(this).cancel(NOTIFY_ID);
+        if(bound){
+            unbindService(serviceConnection);
+            bound=false;
+        }
     }
 
     MediaSessionCompat.Callback mediaSessionCallback = new MediaSessionCompat.Callback() {
@@ -131,7 +148,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             if (ifAudioFocusGranted()) {
                 setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                 player.reset();
-                setPlayerDataSource(uri, bundle);
+                setPlayerDataSource(playlistService.getCurrentSong());
                 mediaSession.setActive(true);
                 showPlayingNotification();
             }
@@ -155,6 +172,20 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             player.stop();
             NotificationManagerCompat.from(MusicPlayerService.this).cancel(NOTIFY_ID);
             stopSelf();
+        }
+    };
+
+    ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
+            playlistService = musicRepositoryBinder.getService();
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            bound= false;
         }
     };
 
@@ -189,16 +220,16 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         result.sendResult(null);
     }
 
-    private void setPlayerDataSource(Uri path, Bundle bundle)  {
+    private void setPlayerDataSource(Song song)  {
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, bundle.getString(MediaStore.Audio.Media.DATA))
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, bundle.getString(MediaStore.Audio.Media.TITLE))
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, bundle.getString(MediaStore.Audio.Media.ALBUM))
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, bundle.getString(MediaStore.Audio.Media.ARTIST))
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, song.getPath())
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.getTitle())
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.getAlbum())
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.getArtist())
                 .build()
         );
         try {
-            player.setDataSource(getApplicationContext(), path);
+            player.setDataSource(getApplicationContext(), Uri.parse(song.getPath()));
             player.prepareAsync();
         }
         catch (IOException ex) {
