@@ -1,5 +1,6 @@
 package com.zell.musicplayer.fragments;
 
+import android.os.Handler;
 import android.view.View;
 import android.widget.ListView;
 
@@ -29,7 +30,7 @@ public class AllLibraryFragment extends BaseFragment {
 
     }
 
-    public List<Item> getSongsList(){
+    public List<Item> getSongsList() {
         return MediaLibraryService.getAllMedia(context);
     }
 

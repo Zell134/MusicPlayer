@@ -1,4 +1,4 @@
-package com.zell.musicplayer;
+package com.zell.musicplayer.activities;
 
 
 import static com.zell.musicplayer.Services.PermissionsService.checkPermissions;
@@ -13,7 +13,6 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
@@ -25,16 +24,16 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
+import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.fragments.AllLibraryFragment;
-import com.zell.musicplayer.fragments.BaseFragment;
 import com.zell.musicplayer.fragments.ExternalStorageFragment;
 import com.zell.musicplayer.fragments.MainFragment;
+import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.models.Item;
 import com.zell.musicplayer.models.Song;
 import com.zell.musicplayer.models.StateViewModel;
@@ -64,6 +63,11 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
         if (checkPermissions(this)) {
             setMainFragment();
+        }else{
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.main_fragment, new PermissionFragment(),null)
+                    .commit();
         }
 
         mediaBrowser = new MediaBrowserCompat(this,
@@ -197,9 +201,8 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
+            PermissionsService.closeNotification(this);
             setMainFragment();
-        }else{
-            checkPermissions(this);
         }
     }
 
