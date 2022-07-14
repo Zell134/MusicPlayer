@@ -17,10 +17,19 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
+            android:id="@+id/previous"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="@string/previous"
+            android:scaleType="centerCrop"
+            android:src="@drawable/previous" />
+
+        <ImageButton
             android:id="@+id/play"
             android:layout_width="70dp"
             android:layout_height="70dp"
-            android:layout_marginEnd="32dp"
+            android:layout_marginHorizontal="10dp"
             android:contentDescription="@string/play_pause"
             android:scaleType="centerCrop"
             android:src="@drawable/play_icon" />
@@ -29,10 +38,19 @@
             android:id="@+id/stop"
             android:layout_width="70dp"
             android:layout_height="70dp"
-            android:layout_marginStart="32dp"
+            android:layout_marginHorizontal="10dp"
             android:contentDescription="@string/stop"
             android:scaleType="centerCrop"
             android:src="@drawable/stop_icon" />
+
+        <ImageButton
+            android:id="@+id/next"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="@string/next"
+            android:scaleType="centerCrop"
+            android:src="@drawable/next" />
 
     </LinearLayout>
 

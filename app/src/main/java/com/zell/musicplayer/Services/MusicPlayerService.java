@@ -129,6 +129,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     }
 
     MediaSessionCompat.Callback mediaSessionCallback = new MediaSessionCompat.Callback() {
+
         @Override
         public void onPlay() {
             startService(new Intent(getApplicationContext(), MusicPlayerService.class));
@@ -139,6 +140,28 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                     player.start();
                     showPlayingNotification();
                 }
+            }
+        }
+
+        @Override
+        public void onSkipToPrevious() {
+            onStop();
+            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
+            Song song = playlistService.getPreviousSong();
+            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
+            if(song !=null){
+                onPlayFromUri(Uri.parse(song.getPath()), new Bundle());
+            }
+        }
+
+        @Override
+        public void onSkipToNext() {
+            onStop();
+            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
+            Song song = playlistService.getNextSong();
+            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
+            if(song !=null){
+                onPlayFromUri(Uri.parse(song.getPath()), new Bundle());
             }
         }
 

@@ -15,19 +15,16 @@ import java.util.List;
 
 public class AllLibraryFragment extends BaseFragment {
 
+    @Override
+    public void setSelection(int position) {
+        super.setSelection(position);
+    }
 
     @Override
     public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {
         listener.setPlaylist(playlist);
         listener.setCurrentSongPosition(position);
         listener.playSong();
-        if (currentSelectedView != null) {
-            currentSelectedView.setBackgroundResource(R.color.white);
-        }
-        currentSelectedView = v;
-        v.setBackgroundResource(R.color.selected_item);
-        l.setItemChecked(position, true);
-
     }
 
     public List<Item> getSongsList() {

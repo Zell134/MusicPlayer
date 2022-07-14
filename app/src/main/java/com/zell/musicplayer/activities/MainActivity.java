@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
@@ -15,7 +16,10 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -26,6 +30,10 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
@@ -33,7 +41,9 @@ import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.Services.PlaylistService;
+import com.zell.musicplayer.adapters.PlaylistPagerAdapter;
 import com.zell.musicplayer.fragments.AllLibraryFragment;
+import com.zell.musicplayer.fragments.BaseFragment;
 import com.zell.musicplayer.fragments.ExternalStorageFragment;
 import com.zell.musicplayer.fragments.MainFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
@@ -60,8 +70,8 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         viewModel = new ViewModelProvider(this).get(StateViewModel.class);
-        viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
-        LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
+        viewModel.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
+        LibraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
 
         connectToMusicRepositoryService();
 
@@ -159,6 +169,8 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     private void buildTransportControls() {
         ImageButton playButton = findViewById(R.id.play);
         ImageButton stopButton = findViewById(R.id.stop);
+        ImageButton previousButton = findViewById(R.id.previous);
+        ImageButton nextButton = findViewById(R.id.next);
         MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
 
         playButton.setOnClickListener(view -> {
@@ -185,6 +197,13 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
             }
         });
 
+        previousButton.setOnClickListener(view -> {
+                mediaController.getTransportControls().skipToPrevious();
+        });
+
+        nextButton.setOnClickListener(view -> {
+                mediaController.getTransportControls().skipToNext();
+        });
         mediaController.registerCallback(controllerCallback);
     }
 
@@ -207,6 +226,24 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                 }
                 case PlaybackStateCompat.STATE_PAUSED:{
                     playPauseButton.setImageResource(R.drawable.play_icon);
+                    break;
+                }
+                case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
+                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:{
+                    ListView list = findViewById(R.id.main_fragment).findViewById(android.R.id.list);
+                    int position =  playlistService.getCurrentSongPosition();
+                    int previousPosition = playlistService.getPreviousSongPosition();
+                    int listSize = list.getCount();
+                    int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) /2;
+
+                    getViewByPosition(previousPosition, list).setBackgroundResource(R.color.default_list_color);
+                    getViewByPosition(position, list).setBackgroundResource(R.color.selected_item);
+
+                    if(previousPosition  != listSize - 1) {
+                        list.setSelection(position - centerOfList);
+                    }else{
+                        list.setSelection(position);
+                    }
                     break;
                 }
             }
@@ -244,11 +281,26 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     @Override
     public void setPlaylist(List<Item> playlist){
         playlistService.setPlyalist(playlist);
+        playlistService.setCurrentSongPosition(0);
     }
 
     @Override
     public void setCurrentSongPosition(int currentSongPosition){
+        ListView list = findViewById(R.id.main_fragment).findViewById(android.R.id.list);
+        getViewByPosition(playlistService.getCurrentSongPosition(), list).setBackgroundResource(R.color.default_list_color);
         playlistService.setCurrentSongPosition(currentSongPosition);
+        getViewByPosition(playlistService.getCurrentSongPosition(), list).setBackgroundResource(R.color.selected_item);
+    }
+
+    private View getViewByPosition(int position, ListView list) {
+        int firstListItemPosition = list.getFirstVisiblePosition();
+        int lastListItemPosition = firstListItemPosition + list.getChildCount() - 1;
+        int childIndex = position - firstListItemPosition;
+        if (position < firstListItemPosition || position > lastListItemPosition ) {
+            return list.getAdapter().getView(position, null, list);
+        } else {
+            return list.getChildAt(childIndex);
+        }
     }
 
     @Override

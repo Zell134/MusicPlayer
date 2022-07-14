@@ -23,12 +23,6 @@ public class ArtistsFragment extends BaseFragment {
             listener.setPlaylist(playlist);
             listener.setCurrentSongPosition(position);
             listener.playSong();
-            if(currentSelectedView != null) {
-                currentSelectedView.setBackgroundResource(R.color.white);
-            }
-            currentSelectedView = v;
-            v.setBackgroundResource(R.color.selected_item);
-            l.setItemChecked(position, true);
         }else {
             if(item.getTitle().equals(getResources().getString(R.string.previous_directory))){
                 if(item.getPath().equals("root")) {

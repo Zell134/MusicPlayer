@@ -6,8 +6,13 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.zell.musicplayer.fragments.AllLibraryFragment;
 import com.zell.musicplayer.fragments.ArtistsFragment;
+import com.zell.musicplayer.fragments.BaseFragment;
+
+import java.util.List;
 
 public class PlaylistPagerAdapter extends FragmentStateAdapter {
+
+    private List<BaseFragment> fragments = List.of(new AllLibraryFragment(), new ArtistsFragment());
 
     public PlaylistPagerAdapter(@NonNull Fragment fragment) {
         super(fragment);
@@ -16,17 +21,12 @@ public class PlaylistPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        switch (position) {
-            case 0:
-                return new AllLibraryFragment();
-            case 1:
-                return new ArtistsFragment();
-        }
-        return null;
+        return fragments.get(position);
     }
 
     @Override
     public int getItemCount() {
-        return 2;
+        return fragments.size();
     }
+
 }
