@@ -43,7 +43,8 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     private AudioManager audioManager;
     private MediaPlayer player;
     private AudioFocusRequest audioFocusRequest;
-    private long playbackState;
+    private PlaybackStateCompat.Builder playbackStateBuilder;
+    private int playbackState;
     private PlaylistService playlistService;
     private boolean bound;
 
@@ -89,11 +90,14 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSession.setCallback(mediaSessionCallback);
         Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
-        mediaSession.setSessionActivity(PendingIntent.getActivity(getApplicationContext(), 0, activityIntent, 0));
-        PlaybackStateCompat.Builder playbackStateBuilder = new PlaybackStateCompat.Builder();
+        mediaSession.setSessionActivity(PendingIntent.getActivity(this, 0, activityIntent, 0));
+
+        playbackStateBuilder = new PlaybackStateCompat.Builder();
         playbackStateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY |
                 PlaybackStateCompat.ACTION_PAUSE |
                 PlaybackStateCompat.ACTION_PLAY_PAUSE|
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT|
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS|
                 PlaybackStateCompat.ACTION_STOP
         );
         mediaSession.setPlaybackState(playbackStateBuilder.build());
@@ -110,8 +114,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         }
     }
 
-
-
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -126,13 +128,12 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             unbindService(serviceConnection);
             bound=false;
         }
+        stopSelf();
     }
 
     MediaSessionCompat.Callback mediaSessionCallback = new MediaSessionCompat.Callback() {
-
         @Override
         public void onPlay() {
-            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
             if (ifAudioFocusGranted()) {
                 if(playbackState == PlaybackStateCompat.STATE_PAUSED) {
                     mediaSession.setActive(true);
@@ -146,7 +147,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         @Override
         public void onSkipToPrevious() {
             onStop();
-            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
             Song song = playlistService.getPreviousSong();
             setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
             if(song !=null){
@@ -157,7 +157,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         @Override
         public void onSkipToNext() {
             onStop();
-            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
             Song song = playlistService.getNextSong();
             setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
             if(song !=null){
@@ -167,7 +166,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
 
         @Override
         public void onPlayFromUri(Uri uri, Bundle bundle) {
-            startService(new Intent(getApplicationContext(), MusicPlayerService.class));
             if (ifAudioFocusGranted()) {
                 setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                 player.reset();
@@ -194,7 +192,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             setMediaPlaybackState(PlaybackStateCompat.STATE_STOPPED);
             player.stop();
             NotificationManagerCompat.from(MusicPlayerService.this).cancel(NOTIFY_ID);
-            stopSelf();
         }
     };
 
@@ -270,24 +267,36 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     }
 
     private void setMediaPlaybackState(int state) {
-        PlaybackStateCompat.Builder playbackstateBuilder = new PlaybackStateCompat.Builder();
+        playbackStateBuilder = new PlaybackStateCompat.Builder();
         playbackState = state;
         switch(state) {
             case PlaybackStateCompat.STATE_STOPPED: {
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_STOP);
+                playbackStateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE|
+                        PlaybackStateCompat.ACTION_PLAY|
+                        PlaybackStateCompat.ACTION_PAUSE|
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS|
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
                 break;
             }
             case PlaybackStateCompat.STATE_PLAYING: {
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY);
+                playbackStateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE|
+                        PlaybackStateCompat.ACTION_STOP|
+                        PlaybackStateCompat.ACTION_PAUSE|
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS|
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
                 break;
             }
             case PlaybackStateCompat.STATE_PAUSED:{
-                playbackstateBuilder.setActions(PlaybackStateCompat.ACTION_PAUSE);
+                playbackStateBuilder.setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE|
+                        PlaybackStateCompat.ACTION_PLAY|
+                        PlaybackStateCompat.ACTION_STOP|
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS|
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
                 break;
             }
         }
-        playbackstateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0);
-        mediaSession.setPlaybackState(playbackstateBuilder.build());
+        playbackStateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0);
+        mediaSession.setPlaybackState(playbackStateBuilder.build());
     }
 
     private void showPlayingNotification(){

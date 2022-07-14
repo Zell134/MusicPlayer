@@ -239,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                     getViewByPosition(previousPosition, list).setBackgroundResource(R.color.default_list_color);
                     getViewByPosition(position, list).setBackgroundResource(R.color.selected_item);
 
+                    list.requestFocus();
                     if(previousPosition  != listSize - 1) {
                         list.setSelection(position - centerOfList);
                     }else{
