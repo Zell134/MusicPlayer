@@ -28,6 +28,7 @@ public class MediaLibraryService {
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.ARTIST
     };
 
@@ -155,6 +156,7 @@ public class MediaLibraryService {
         String title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
         String album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
         String artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
-        return new Song(data, title, album, artist, true);
+        long duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
+        return new Song(data, title, album, artist, duration, true);
     }
 }

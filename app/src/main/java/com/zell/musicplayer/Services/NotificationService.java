@@ -17,16 +17,13 @@ import androidx.media.session.MediaButtonReceiver;
 
 import com.zell.musicplayer.R;
 
-public class MediaStyleHelper {
+public class NotificationService {
 
-    private static final String NOTIFY_ID="com.zell.musicplayer.Services";
+    private final String NOTIFY_ID="com.zell.musicplayer.Services";
+    private NotificationCompat.Builder builder;
 
-    public static NotificationCompat.Builder from(
+    public NotificationService (
             MusicPlayerService context, MediaSessionCompat mediaSession) {
-
-        MediaControllerCompat controller = mediaSession.getController();
-        MediaMetadataCompat mediaMetadata = controller.getMetadata();
-
         NotificationChannel notificationChannel;
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
@@ -38,29 +35,13 @@ public class MediaStyleHelper {
             notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             notificationManager.createNotificationChannel(notificationChannel);
         }
-        String title = mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE);
-        String artist = mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST);
-        String album = mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NOTIFY_ID);
+        builder = new NotificationCompat.Builder(context, NOTIFY_ID);
+
         builder
-                .addAction(
-                        new NotificationCompat.Action(
-                                android.R.drawable.ic_media_previous, context.getString(R.string.previous),
-                                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                        context,
-                                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)))
-                .addAction(
-                        new NotificationCompat.Action(android.R.drawable.ic_media_next, context.getString(R.string.next),
-                            MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                    context,
-                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT)))
-                .setContentTitle(title)
-                .setContentText(artist)
-                .setSubText(artist + " - " + title + " (" + album + ")")
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.drawable.wallpaper1))
                 .setSmallIcon(R.drawable.audio)
-                .setContentIntent(controller.getSessionActivity())
+                .setContentIntent(mediaSession.getController().getSessionActivity())
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
@@ -69,6 +50,9 @@ public class MediaStyleHelper {
                 .setShowCancelButton(true)
                 .setCancelButtonIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
         );
+    }
+
+    public NotificationCompat.Builder getBuilder() {
         return builder;
     }
 }
