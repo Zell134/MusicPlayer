@@ -16,7 +16,6 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -33,14 +32,14 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.android.material.tabs.TabLayout;
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.fragments.AllLibraryFragment;
+import com.zell.musicplayer.fragments.ArtistsFragment;
+import com.zell.musicplayer.fragments.BaseFragment;
 import com.zell.musicplayer.fragments.ExternalStorageFragment;
-import com.zell.musicplayer.fragments.MainFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.models.Item;
 import com.zell.musicplayer.models.StateViewModel;
@@ -54,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
     public static final String LIBRARY_TYPE_MEDIA_LIBRARY = "MediaLibrary";
     public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
+    public static final String LIBRARY_TYPE_ARTISTS = "Artists";
 
     private PlaylistService playlistService;
     private boolean bound;
@@ -70,8 +70,8 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         viewModel = new ViewModelProvider(this).get(StateViewModel.class);
-        viewModel.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
-        LibraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
+        viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
+        LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
         seekbar = findViewById(R.id.seekbar);
         timer = findViewById(R.id.timer);
         connectToMusicRepositoryService();
@@ -178,18 +178,16 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
         playButton.setOnClickListener(view -> {
             switch (currentState) {
-
                 case PlaybackStateCompat.STATE_NONE:
-                case PlaybackStateCompat.STATE_STOPPED: {
+                case PlaybackStateCompat.STATE_STOPPED:
                     playSong();
                     break;
-                }
-                case PlaybackStateCompat.STATE_PLAYING: {
+
+                case PlaybackStateCompat.STATE_PLAYING:
                     mediaController.getTransportControls().pause();
                     break;
-                } case PlaybackStateCompat.STATE_PAUSED: {
+                case PlaybackStateCompat.STATE_PAUSED:
                     mediaController.getTransportControls().play();
-                }
             }
         });
 
@@ -218,15 +216,16 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
             switch (currentState) {
                 case PlaybackStateCompat.STATE_NONE:
-                case PlaybackStateCompat.STATE_STOPPED: {
+                case PlaybackStateCompat.STATE_STOPPED:
                     playPauseButton.setImageResource(R.drawable.play_icon);
                     handler.removeCallbacks(null);
                     break;
-                }
-                case PlaybackStateCompat.STATE_PLAYING: {
+
+                case PlaybackStateCompat.STATE_PLAYING:
                     playPauseButton.setImageResource(R.drawable.pause_icon);
                     handler.post(new Runnable() {
                         MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
+
                         @Override
                         public void run() {
                             long playerPosition = (int) mediaController.getPlaybackState().getPosition();
@@ -238,31 +237,32 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                         }
                     });
                     break;
-                }
-                case PlaybackStateCompat.STATE_PAUSED:{
+
+                case PlaybackStateCompat.STATE_PAUSED:
                     playPauseButton.setImageResource(R.drawable.play_icon);
                     handler.removeCallbacks(null);
                     break;
-                }
+
                 case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
-                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:{
-                    ListView list = findViewById(R.id.main_fragment).findViewById(android.R.id.list);
-                    int position =  playlistService.getCurrentSongPosition();
+                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
+                    BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
+
+                    ListView list = playlistFragment.getplaylist();
+
+                    int position = playlistService.getCurrentSongPosition();
                     int previousPosition = playlistService.getPreviousSongPosition();
                     int listSize = list.getCount();
-                    int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) /2;
-
-                    getViewByPosition(previousPosition, list).setBackgroundResource(R.color.default_list_color);
-                    getViewByPosition(position, list).setBackgroundResource(R.color.selected_item);
+                    int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) / 2;
 
                     list.requestFocus();
-                    if(previousPosition  != listSize - 1) {
+                    if (previousPosition != listSize - 1) {
                         list.setSelection(position - centerOfList);
-                    }else{
+                    } else {
                         list.setSelection(position);
                     }
+                    playlistFragment.currentSongHighlight(playlistService.getCurrentSongPosition());
                     break;
-                }
+
             }
         }
 
@@ -327,33 +327,24 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
     @Override
     public void setCurrentSongPosition(int currentSongPosition){
-        ListView list = findViewById(R.id.main_fragment).findViewById(android.R.id.list);
-        getViewByPosition(playlistService.getCurrentSongPosition(), list).setBackgroundResource(R.color.default_list_color);
         playlistService.setCurrentSongPosition(currentSongPosition);
-        getViewByPosition(playlistService.getCurrentSongPosition(), list).setBackgroundResource(R.color.selected_item);
     }
 
-    private View getViewByPosition(int position, ListView list) {
-        int firstListItemPosition = list.getFirstVisiblePosition();
-        int lastListItemPosition = firstListItemPosition + list.getChildCount() - 1;
-        int childIndex = position - firstListItemPosition;
-        if (position < firstListItemPosition || position > lastListItemPosition ) {
-            return list.getAdapter().getView(position, null, list);
-        } else {
-            return list.getChildAt(childIndex);
-        }
-    }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch(item.getItemId()){
+            case(R.id.external_storage):
+                viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
+                LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
+                break;
             case(R.id.all_media):
                 viewModel.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
                 LibraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
                 break;
-            case(R.id.external_storage):
-                viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
-                LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
+            case(R.id.artists):
+                viewModel.setLibraryType(LIBRARY_TYPE_ARTISTS);
+                LibraryType = LIBRARY_TYPE_ARTISTS;
                 break;
             case(R.id.exit):
                 onDestroy();
@@ -379,22 +370,15 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     }
 
     public void setMainFragment(){
-        TabLayout tabs = findViewById(R.id.tabs);
         switch (LibraryType) {
             case LIBRARY_TYPE_EXTERNAL_STORAGE:
                 setFragment(new ExternalStorageFragment());
-                int count = tabs.getTabCount();
-                if(count>0) {
-                    for (int i = 1; i < count; i++) {
-                        tabs.removeTabAt(i);
-                    }
-                    tabs.getTabAt(0).setText(getResources().getString(R.string.external_storage));
-                }else {
-                    tabs.addTab(tabs.newTab().setText(getResources().getString(R.string.external_storage)));
-                }
                 break;
             case LIBRARY_TYPE_MEDIA_LIBRARY:
-                setFragment(new MainFragment());
+                setFragment(new AllLibraryFragment());
+                break;
+            case LIBRARY_TYPE_ARTISTS:
+                setFragment(new ArtistsFragment());
                 break;
         }
     }
@@ -403,12 +387,12 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         FragmentManager fragmentManager = getSupportFragmentManager();
         if(fragmentManager.getFragments().size() == 0){
             fragmentManager.beginTransaction()
-                    .add(R.id.main_fragment, fragment,null)
+                    .add(R.id.main_fragment, fragment,"main")
                     .commit();
         }else {
             fragmentManager.beginTransaction()
                     .detach(fragmentManager.getFragments().get(0))
-                    .replace(R.id.main_fragment, fragment,null)
+                    .replace(R.id.main_fragment, fragment,"main")
                     .commit();
         }
     }

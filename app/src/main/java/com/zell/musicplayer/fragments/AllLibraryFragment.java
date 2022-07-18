@@ -25,6 +25,7 @@ public class AllLibraryFragment extends BaseFragment {
         listener.setPlaylist(playlist);
         listener.setCurrentSongPosition(position);
         listener.playSong();
+        currentSongHighlight(position);
     }
 
     public List<Item> getSongsList() {

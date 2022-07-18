@@ -23,6 +23,7 @@ public class ArtistsFragment extends BaseFragment {
             listener.setPlaylist(playlist);
             listener.setCurrentSongPosition(position);
             listener.playSong();
+            currentSongHighlight(position);
         }else {
             if(item.getTitle().equals(getResources().getString(R.string.previous_directory))){
                 if(item.getPath().equals("root")) {

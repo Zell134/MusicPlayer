@@ -4,14 +4,19 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/all_media"
-            android:icon="@android:drawable/ic_menu_gallery"
-            android:title="@string/all_media_library" />
-        <item
             android:id="@+id/external_storage"
             android:checked="true"
             android:icon="@android:drawable/stat_notify_sdcard"
             android:title="@string/external_storage" />
+        <item
+            android:id="@+id/all_media"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="@string/all_media_library" />
+        <item
+            android:id="@+id/artists"
+            android:checked="true"
+            android:icon="@android:drawable/btn_star"
+            android:title="@string/artists" />
         <item
             android:id="@+id/exit"
             android:icon="@android:drawable/ic_menu_close_clear_cancel"

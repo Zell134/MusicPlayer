@@ -314,53 +314,53 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         playbackState = state;
         long actions = getAvailableActions(state);
         switch(state) {
-            case PlaybackStateCompat.STATE_STOPPED: {
+            case PlaybackStateCompat.STATE_STOPPED:
                 playbackStateBuilder.setActions(actions);
                 playbackStateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1);
                 mediaSession.setPlaybackState(playbackStateBuilder.build());
                 break;
-            }
-            case PlaybackStateCompat.STATE_PLAYING: {
+            case PlaybackStateCompat.STATE_PLAYING:
                 playbackStateBuilder.setState(state, player.getCurrentPosition(), 1);
                 playbackStateBuilder.setActions(actions);
                 mediaSession.setPlaybackState(playbackStateBuilder.build());
                 break;
-            }
-            case PlaybackStateCompat.STATE_PAUSED:{
+            case PlaybackStateCompat.STATE_PAUSED:
                 playbackStateBuilder.setActions(actions);
                 playbackStateBuilder.setState(state, player.getCurrentPosition(), 1);
                 mediaSession.setPlaybackState(playbackStateBuilder.build());
                 break;
-            }
+            case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
+            case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
+                playbackStateBuilder.setState(state, player.getCurrentPosition(), 1);
+                playbackStateBuilder.setActions(actions);
+                mediaSession.setPlaybackState(playbackStateBuilder.build());
+                break;
         }
     }
 
     private long getAvailableActions(int state){
         switch(state) {
-            case PlaybackStateCompat.STATE_STOPPED: {
+            case PlaybackStateCompat.STATE_STOPPED:
                 return PlaybackStateCompat.ACTION_PLAY_PAUSE |
                         PlaybackStateCompat.ACTION_PLAY |
                         PlaybackStateCompat.ACTION_PAUSE |
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
                         PlaybackStateCompat.ACTION_SEEK_TO |
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
-            }
-            case PlaybackStateCompat.STATE_PLAYING: {
+            case PlaybackStateCompat.STATE_PLAYING:
                 return PlaybackStateCompat.ACTION_PLAY_PAUSE |
                         PlaybackStateCompat.ACTION_STOP |
                         PlaybackStateCompat.ACTION_PAUSE |
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
                         PlaybackStateCompat.ACTION_SEEK_TO |
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
-            }
-            case PlaybackStateCompat.STATE_PAUSED: {
+            case PlaybackStateCompat.STATE_PAUSED:
                 return PlaybackStateCompat.ACTION_PLAY_PAUSE |
                         PlaybackStateCompat.ACTION_PLAY |
                         PlaybackStateCompat.ACTION_STOP |
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
                         PlaybackStateCompat.ACTION_SEEK_TO |
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
-            }
         }
         return -1;
     }
