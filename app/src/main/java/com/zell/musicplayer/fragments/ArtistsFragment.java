@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MediaLibraryService;
-import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
 import java.util.List;

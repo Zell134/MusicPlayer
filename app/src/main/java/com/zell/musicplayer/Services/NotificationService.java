@@ -7,8 +7,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.graphics.BitmapFactory;
 import android.os.Build;
-import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 

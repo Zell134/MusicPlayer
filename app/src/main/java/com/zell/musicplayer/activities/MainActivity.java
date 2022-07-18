@@ -29,7 +29,6 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.R;
@@ -42,7 +41,6 @@ import com.zell.musicplayer.fragments.BaseFragment;
 import com.zell.musicplayer.fragments.ExternalStorageFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.models.Item;
-import com.zell.musicplayer.models.StateViewModel;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -59,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     private boolean bound;
     private MediaBrowserCompat mediaBrowser;
     private int currentState;
-    private StateViewModel viewModel;
     private String LibraryType;
     private Handler handler = new Handler();
     private SeekBar seekbar;
@@ -69,8 +66,6 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        viewModel = new ViewModelProvider(this).get(StateViewModel.class);
-        viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
         LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
         seekbar = findViewById(R.id.seekbar);
         timer = findViewById(R.id.timer);
@@ -247,7 +242,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                 case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
                     BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
 
-                    ListView list = playlistFragment.getplaylist();
+                    ListView list = playlistFragment.getPlaylist();
 
                     int position = playlistService.getCurrentSongPosition();
                     int previousPosition = playlistService.getPreviousSongPosition();
@@ -321,7 +316,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
     @Override
     public void setPlaylist(List<Item> playlist){
-        playlistService.setPlyalist(playlist);
+        playlistService.setPlaylist(playlist);
         playlistService.setCurrentSongPosition(0);
     }
 
@@ -335,15 +330,12 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch(item.getItemId()){
             case(R.id.external_storage):
-                viewModel.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
                 LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
                 break;
             case(R.id.all_media):
-                viewModel.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
                 LibraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
                 break;
             case(R.id.artists):
-                viewModel.setLibraryType(LIBRARY_TYPE_ARTISTS);
                 LibraryType = LIBRARY_TYPE_ARTISTS;
                 break;
             case(R.id.exit):

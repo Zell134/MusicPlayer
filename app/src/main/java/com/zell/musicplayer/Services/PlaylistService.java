@@ -14,7 +14,7 @@ import java.util.List;
 
 public class PlaylistService extends Service {
 
-    private List<Item> plyalist;
+    private List<Item> playlist;
     private int currentSongPosition = 0;
     private int previousSongPosition = 0;
 
@@ -32,12 +32,12 @@ public class PlaylistService extends Service {
         return binder;
     }
 
-    public List<Item> getPlyalist() {
-        return plyalist;
+    public List<Item> getPlaylist() {
+        return playlist;
     }
 
-    public void setPlyalist(List<Item> plyalist) {
-        this.plyalist = plyalist;
+    public void setPlaylist(List<Item> playlist) {
+        this.playlist = playlist;
     }
 
     public int getCurrentSongPosition() {
@@ -50,7 +50,7 @@ public class PlaylistService extends Service {
     }
 
     public Song getCurrentSong(){
-        return (Song) plyalist.get(currentSongPosition);
+        return (Song) playlist.get(currentSongPosition);
     }
 
     public Song getPreviousSong(){
@@ -59,14 +59,14 @@ public class PlaylistService extends Service {
             int i = 0;
             currentSongPosition--;
             if(currentSongPosition<0){
-                currentSongPosition = plyalist.size() - 1;
+                currentSongPosition = playlist.size() - 1;
             }
-            Item item = plyalist.get(currentSongPosition);
+            Item item = playlist.get(currentSongPosition);
             if(item.isAudioFile()){
                 return (Song)item;
             }
             i++;
-            if(i >=plyalist.size()){
+            if(i >= playlist.size()){
                 break;
             }
         }
@@ -79,15 +79,15 @@ public class PlaylistService extends Service {
         while (true){
             int i = 0;
             currentSongPosition++;
-            if(currentSongPosition > plyalist.size() - 1){
+            if(currentSongPosition > playlist.size() - 1){
                 currentSongPosition = 0;
             }
-            Item item = plyalist.get(currentSongPosition);
+            Item item = playlist.get(currentSongPosition);
             if(item.isAudioFile()){
                 return (Song)item;
             }
             i++;
-            if(i >=plyalist.size()){
+            if(i >= playlist.size()){
                 break;
             }
         }

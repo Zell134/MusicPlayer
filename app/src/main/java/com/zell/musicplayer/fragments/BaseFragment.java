@@ -12,8 +12,6 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.ListFragment;
 
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.MusicPlayerService;
-import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
@@ -60,7 +58,7 @@ public abstract class BaseFragment  extends ListFragment {
         setListAdapter(adapter);
     }
 
-    public ListView getplaylist(){
+    public ListView getPlaylist(){
         return getActivity().findViewById(android.R.id.list);
     }
 
