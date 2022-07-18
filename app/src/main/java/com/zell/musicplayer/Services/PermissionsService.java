@@ -13,17 +13,17 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
-import com.zell.musicplayer.MainActivity;
+import com.zell.musicplayer.activities.MainActivity;
 import com.zell.musicplayer.R;
 
 public class PermissionsService {
 
     private static final int REQUEST_CODE = 1;
+    private static final int ID = 100;
     private static final String NOTIFICATION_ID = "Notification";
     private static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
 
     public static boolean checkPermissions(AppCompatActivity activity) {
-        int i = 0;
         if (ContextCompat.checkSelfPermission(activity, PERMISSION_STRING) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(activity, new String[]{PERMISSION_STRING}, REQUEST_CODE);
             return false;
@@ -61,12 +61,17 @@ public class PermissionsService {
                         NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_ID, "Permission_denied", NotificationManager.IMPORTANCE_HIGH);
                         notificationManager.createNotificationChannel(notificationChannel);
                     }
-                    notificationManager.notify(0, builder.build());
+                    notificationManager.notify(ID, builder.build());
                     Toast.makeText(activity, R.string.permission_denied, Toast.LENGTH_LONG).show();
                     return false;
                 }
             }
         }
         return false;
+    }
+    public static void closeNotification(AppCompatActivity activity){
+        NotificationManager notificationManager =
+                (NotificationManager) activity.getSystemService(activity.NOTIFICATION_SERVICE);
+        notificationManager.cancel(ID);
     }
 }

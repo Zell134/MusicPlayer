@@ -1,5 +1,6 @@
 package com.zell.musicplayer.fragments;
 
+import android.os.Handler;
 import android.view.View;
 import android.widget.ListView;
 
@@ -14,29 +15,25 @@ import java.util.List;
 
 public class AllLibraryFragment extends BaseFragment {
 
+    @Override
+    public void setSelection(int position) {
+        super.setSelection(position);
+    }
 
     @Override
     public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {
         listener.setPlaylist(playlist);
         listener.setCurrentSongPosition(position);
         listener.playSong();
-        if (currentSelectedView != null) {
-            currentSelectedView.setBackgroundResource(R.color.white);
-        }
-        currentSelectedView = v;
-        v.setBackgroundResource(R.color.selected_item);
-        l.setItemChecked(position, true);
-
+        currentSongHighlight(position);
     }
 
-    public List<Item> getSongsList(){
+    public List<Item> getSongsList() {
         return MediaLibraryService.getAllMedia(context);
     }
 
     protected void updatePlaylist(){
         playlist = getSongsList();
-        adapter = new SongAdapter(context, playlist);
-        adapter.notifyDataSetChanged();
-        setListAdapter(adapter);
+        updateAdapter();
     }
 }

@@ -4,29 +4,22 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/all_media"
-            android:icon="@android:drawable/ic_menu_gallery"
-            android:title="@string/all_media_library" />
-        <item
             android:id="@+id/external_storage"
             android:checked="true"
             android:icon="@android:drawable/stat_notify_sdcard"
             android:title="@string/external_storage" />
         <item
+            android:id="@+id/all_media"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="@string/all_media_library" />
+        <item
+            android:id="@+id/artists"
+            android:checked="true"
+            android:icon="@android:drawable/btn_star"
+            android:title="@string/artists" />
+        <item
             android:id="@+id/exit"
             android:icon="@android:drawable/ic_menu_close_clear_cancel"
             android:title="@string/exit" />
     </group>
-<!--    <item android:title="@string/nav_support">-->
-<!--        <menu>-->
-<!--            <item-->
-<!--                android:id="@+id/nav_help"-->
-<!--                android:icon="@android:drawable/ic_menu_help"-->
-<!--                android:title="@string/nav_help"/>-->
-<!--            <item-->
-<!--                android:id="@+id/nav_feedback"-->
-<!--                android:icon="@android:drawable/sym_action_email"-->
-<!--                android:title="@string/nav_feedback" />-->
-<!--        </menu>-->
-<!--    </item>-->
 </menu>

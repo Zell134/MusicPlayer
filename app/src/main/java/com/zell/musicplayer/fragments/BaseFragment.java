@@ -5,10 +5,15 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.ListFragment;
 
+import com.zell.musicplayer.R;
+import com.zell.musicplayer.Services.MusicPlayerService;
+import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
@@ -29,7 +34,7 @@ public abstract class BaseFragment  extends ListFragment {
     protected Context context;
     protected List<Item> playlist = new ArrayList<>();
     protected SongAdapter adapter;
-    protected View currentSelectedView;
+    private LinearLayout currentLayout;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -49,4 +54,34 @@ public abstract class BaseFragment  extends ListFragment {
         super.onStart();
     }
 
+    protected void updateAdapter() {
+        adapter = new SongAdapter(context, playlist);
+        adapter.notifyDataSetChanged();
+        setListAdapter(adapter);
+    }
+
+    public ListView getplaylist(){
+        return getActivity().findViewById(android.R.id.list);
+    }
+
+    public void currentSongHighlight(int positiion){
+        ListView listView = getActivity().findViewById(android.R.id.list);
+        if(currentLayout!=null){
+            currentLayout.setBackgroundResource(R.color.default_list_color);
+        }
+        LinearLayout layout = (LinearLayout) getViewByPosition(positiion, listView);
+        layout.setBackgroundResource(R.color.selected_item);
+        currentLayout = layout;
+    }
+
+    private View getViewByPosition(int position, ListView list) {
+        int firstListItemPosition = list.getFirstVisiblePosition();
+        int lastListItemPosition = firstListItemPosition + list.getChildCount() - 1;
+        int childIndex = position - firstListItemPosition;
+        if (position < firstListItemPosition || position > lastListItemPosition ) {
+            return list.getAdapter().getView(position, null, list);
+        } else {
+            return list.getChildAt(childIndex);
+        }
+    }
 }

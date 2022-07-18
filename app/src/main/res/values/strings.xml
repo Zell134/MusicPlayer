@@ -1,25 +1,29 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
     <string name="permission_denied">Необходим доступ к хранилищу данных.</string>
+    <string name="grant_denied">Предоставить доступ.</string>
     <string name="previous_directory">..</string>
     <string name="nav_open_drawer">Open navigation drawer</string>
     <string name="nav_close_drawer">Close navigation drawer</string>
 
-<!--    Player-->
+    <!--    Player-->
     <string name="playing">Проигрывается</string>
     <string name="previous">Previous</string>
     <string name="next">Next</string>
     <string name="play">Play</string>
+    <string name="play_pause">Play/Pause</string>
     <string name="pause">Pause</string>
     <string name="stop">Stop</string>
-<!--    Player-->
+    <!--    Player-->
 
 
-<!--    Menu options-->
+    <!--    Menu options-->
     <string name="all_media_library">Библиотека</string>
     <string name="external_storage">Внешний накопитель</string>
     <string name="artists">Исполнители</string>
     <string name="exit">Выход</string>
-<!--     Menu options-->
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!--     Menu options-->
 
 </resources>
