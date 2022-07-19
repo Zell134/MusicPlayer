@@ -5,9 +5,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.BitmapFactory;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -24,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 
@@ -37,7 +40,6 @@ import java.util.List;
 public class MusicPlayerService extends MediaBrowserServiceCompat implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 
     private static final String MY_MEDIA_ROOT_ID = "com.zell.musicplayer";
-    private static final int NOTIFY_ID = 1;
 
 
     private MediaSessionCompat mediaSession;
@@ -129,7 +131,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         if(player!=null){
             player.release();
         }
-        NotificationManagerCompat.from(this).cancel(NOTIFY_ID);
+        NotificationManagerCompat.from(this).cancel(NotificationService.ID);
         if(bound){
             unbindService(serviceConnection);
             bound=false;
@@ -188,18 +190,22 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     public void skipToPrevious() {
         stop();
         Song song = playlistService.getPreviousSong();
-        setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
-        if(song !=null){
-            playFromUri();
+        if(song != null) {
+            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
+            if (song != null) {
+                playFromUri();
+            }
         }
     }
 
     public void skipToNext() {
         stop();
         Song song = playlistService.getNextSong();
-        setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
-        if(song !=null){
-            playFromUri();
+        if(song != null) {
+            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
+            if (song != null) {
+                playFromUri();
+            }
         }
     }
 
@@ -228,7 +234,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         mediaSession.setActive(false);
         setMediaPlaybackState(PlaybackStateCompat.STATE_STOPPED);
         player.stop();
-        NotificationManagerCompat.from(MusicPlayerService.this).cancel(NOTIFY_ID);
+        NotificationManagerCompat.from(MusicPlayerService.this).cancel(NotificationService.ID);
         isNotificationShown = false;
     }
 
@@ -238,7 +244,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         play();
     }
 
-    ServiceConnection serviceConnection = new ServiceConnection() {
+    private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
@@ -252,7 +258,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         }
     };
 
-    AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+    private AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
         @Override
         public void onAudioFocusChange(int focusState) {
             switch(focusState){
@@ -284,20 +290,31 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     }
 
     private void setPlayerDataSource(Song song)  {
-        mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, song.getPath())
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.getTitle())
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.getAlbum())
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.getArtist())
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.getDuration())
-                .build()
-        );
-        try {
-            player.setDataSource(getApplicationContext(), Uri.parse(song.getPath()));
-            player.prepareAsync();
-        }
-        catch (IOException ex) {
-            ex.printStackTrace();
+        if(song!=null) {
+            MediaMetadataRetriever metaRetriever = new MediaMetadataRetriever();
+            metaRetriever.setDataSource(song.getPath());
+            byte[] albumArt = metaRetriever.getEmbeddedPicture();
+            MediaMetadataCompat.Builder builder = new MediaMetadataCompat.Builder();
+            builder
+                    .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, song.getPath())
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, song.getTitle())
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, song.getAlbum())
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, song.getArtist())
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.getDuration());
+            if (albumArt != null) {
+                builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeByteArray(albumArt, 0, albumArt.length));
+            } else {
+                builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeResource(getResources(), R.drawable.empty_album_art2));
+            }
+
+
+            mediaSession.setMetadata(builder.build());
+            try {
+                player.setDataSource(getApplicationContext(), Uri.parse(song.getPath()));
+                player.prepareAsync();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -373,8 +390,14 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                         new NotificationCompat.Action(android.R.drawable.ic_media_pause,
                                 getResources().getString(R.string.pause),
                                 MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PAUSE))
+                )
+                .setLargeIcon(
+                        mediaSession
+                                .getController()
+                                .getMetadata()
+                                .getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)
                 );
-        NotificationManagerCompat.from(this).notify(NOTIFY_ID, notificationBuilder.build());
+        NotificationManagerCompat.from(this).notify(NotificationService.ID, notificationBuilder.build());
 
     }
 
@@ -387,7 +410,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                         getResources().getString(R.string.play),
                         MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY))
         );
-        NotificationManagerCompat.from(this).notify(NOTIFY_ID, notificationBuilder.build());
+        NotificationManagerCompat.from(this).notify(NotificationService.ID, notificationBuilder.build());
     }
 
     public void addNotificationAction(){

@@ -18,6 +18,8 @@ import com.zell.musicplayer.R;
 public class NotificationService {
 
     private final String NOTIFY_ID="com.zell.musicplayer.Services";
+    public static final int ID = 1;
+
     private NotificationCompat.Builder builder;
 
     public NotificationService (
@@ -37,7 +39,6 @@ public class NotificationService {
         builder = new NotificationCompat.Builder(context, NOTIFY_ID);
 
         builder
-                .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.drawable.wallpaper1))
                 .setSmallIcon(R.drawable.audio)
                 .setContentIntent(mediaSession.getController().getSessionActivity())
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

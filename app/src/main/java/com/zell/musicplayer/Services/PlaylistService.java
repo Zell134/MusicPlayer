@@ -50,48 +50,55 @@ public class PlaylistService extends Service {
     }
 
     public Song getCurrentSong(){
-        return (Song) playlist.get(currentSongPosition);
+        if(playlist!=null) {
+            return (Song) playlist.get(currentSongPosition);
+        }
+        return null;
     }
 
     public Song getPreviousSong(){
-        previousSongPosition = currentSongPosition;
-        while (true){
-            int i = 0;
-            currentSongPosition--;
-            if(currentSongPosition<0){
-                currentSongPosition = playlist.size() - 1;
+        if(playlist != null) {
+            previousSongPosition = currentSongPosition;
+            while (true) {
+                int i = 0;
+                currentSongPosition--;
+                if (currentSongPosition < 0) {
+                    currentSongPosition = playlist.size() - 1;
+                }
+                Item item = playlist.get(currentSongPosition);
+                if (item.isAudioFile()) {
+                    return (Song) item;
+                }
+                i++;
+                if (i >= playlist.size()) {
+                    break;
+                }
             }
-            Item item = playlist.get(currentSongPosition);
-            if(item.isAudioFile()){
-                return (Song)item;
-            }
-            i++;
-            if(i >= playlist.size()){
-                break;
-            }
+            currentSongPosition = previousSongPosition;
         }
-        currentSongPosition = previousSongPosition;
         return null;
     }
 
     public Song getNextSong(){
-        previousSongPosition = currentSongPosition;
-        while (true){
-            int i = 0;
-            currentSongPosition++;
-            if(currentSongPosition > playlist.size() - 1){
-                currentSongPosition = 0;
+        if(playlist != null) {
+            previousSongPosition = currentSongPosition;
+            while (true) {
+                int i = 0;
+                currentSongPosition++;
+                if (currentSongPosition > playlist.size() - 1) {
+                    currentSongPosition = 0;
+                }
+                Item item = playlist.get(currentSongPosition);
+                if (item.isAudioFile()) {
+                    return (Song) item;
+                }
+                i++;
+                if (i >= playlist.size()) {
+                    break;
+                }
             }
-            Item item = playlist.get(currentSongPosition);
-            if(item.isAudioFile()){
-                return (Song)item;
-            }
-            i++;
-            if(i >= playlist.size()){
-                break;
-            }
+            currentSongPosition = previousSongPosition;
         }
-        currentSongPosition = previousSongPosition;
         return null;
     }
 

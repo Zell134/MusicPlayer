@@ -17,6 +17,7 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -25,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -33,6 +35,7 @@ import androidx.fragment.app.FragmentManager;
 import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
+import com.zell.musicplayer.Services.NotificationService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.fragments.AllLibraryFragment;
@@ -41,6 +44,7 @@ import com.zell.musicplayer.fragments.BaseFragment;
 import com.zell.musicplayer.fragments.ExternalStorageFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.models.Item;
+import com.zell.musicplayer.models.Song;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -53,22 +57,20 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
     public static final String LIBRARY_TYPE_ARTISTS = "Artists";
 
-    private PlaylistService playlistService;
-    private boolean bound;
-    private MediaBrowserCompat mediaBrowser;
-    private int currentState;
     private String LibraryType;
     private Handler handler = new Handler();
     private SeekBar seekbar;
     private TextView timer;
+    private int currentState;
+    private PlaylistService playlistService;
+    private MediaBrowserCompat mediaBrowser;
+    private boolean bound = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
-        seekbar = findViewById(R.id.seekbar);
-        timer = findViewById(R.id.timer);
         connectToMusicRepositoryService();
 
         if (checkPermissions(this)) {
@@ -80,14 +82,13 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                     .commit();
         }
 
-        mediaBrowser = new MediaBrowserCompat(this,
-                new ComponentName(this, MusicPlayerService.class),
-                connectionCalback,
-                null);
+            mediaBrowser = new MediaBrowserCompat(this,
+                    new ComponentName(this, MusicPlayerService.class),
+                    connectionCalback,
+                    null);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.nav_open_drawer, R.string.nav_close_drawer);
@@ -98,76 +99,22 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        if(!mediaBrowser.isConnected()) {
-            mediaBrowser.connect();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (MediaControllerCompat.getMediaController(MainActivity.this) != null) {
-            MediaControllerCompat.getMediaController(MainActivity.this).unregisterCallback(controllerCallback);
-        }
-        if(bound){
-            unbindService(serviceConnection);
-            bound=false;
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        MediaControllerCompat
-                .getMediaController(MainActivity.this)
-                .getTransportControls()
-                .stop();
-        mediaBrowser.disconnect();
-        super.onDestroy();
-    }
-
-    private void connectToMusicRepositoryService(){
+    protected void connectToMusicRepositoryService(){
         Intent intent = new Intent(this, PlaylistService.class);
         bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
-    private final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
-        @Override
-        public void onConnected() {
-            try {
-                MediaControllerCompat mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
-                MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
-                buildTransportControls();
-//                playSong();
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-    };
+    protected void buildTransportControls() {
+        seekbar = findViewById(R.id.seekbar);
+        timer = findViewById(R.id.timer);
 
-    ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
-            playlistService = musicRepositoryBinder.getService();
-            bound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            bound= false;
-        }
-    };
-
-    private void buildTransportControls() {
         ImageButton playButton = findViewById(R.id.play);
         ImageButton stopButton = findViewById(R.id.stop);
         ImageButton previousButton = findViewById(R.id.previous);
         ImageButton nextButton = findViewById(R.id.next);
-        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
+        ImageView exit = findViewById(R.id.exit);
+        ImageView expandInfoButton = findViewById(R.id.expand_info);
+        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(this);
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
 
@@ -193,90 +140,87 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         });
 
         previousButton.setOnClickListener(view -> {
-                mediaController.getTransportControls().skipToPrevious();
+            mediaController.getTransportControls().skipToPrevious();
         });
 
         nextButton.setOnClickListener(view -> {
-                mediaController.getTransportControls().skipToNext();
+            mediaController.getTransportControls().skipToNext();
+        });
+
+        exit.setOnClickListener(view -> {
+            onDestroy();
+            System.exit(0);
+        });
+
+
+        expandInfoButton.setOnClickListener(view -> {
+            if(playlistService.getPlaylist()!=null) {
+                Intent intent = new Intent(this, SongInfoActivity.class);
+                startActivity(intent);
+            }
         });
         mediaController.registerCallback(controllerCallback);
     }
 
-    MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if(!mediaBrowser.isConnected()) {
+            mediaBrowser.connect();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (MediaControllerCompat.getMediaController(MainActivity.this) != null) {
+            MediaControllerCompat.getMediaController(MainActivity.this).unregisterCallback(controllerCallback);
+        }
+        if(bound){
+            unbindService(serviceConnection);
+            bound = false;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        MediaControllerCompat
+                .getMediaController(MainActivity.this)
+                .getTransportControls()
+                .stop();
+        mediaBrowser.disconnect();
+        NotificationManagerCompat.from(this).cancel(NotificationService.ID);
+        super.onDestroy();
+    }
+
+    protected final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
-        public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            super.onPlaybackStateChanged(state);
-            currentState = state.getState();
-            ImageButton playPauseButton = findViewById(R.id.play);
-
-            switch (currentState) {
-                case PlaybackStateCompat.STATE_NONE:
-                case PlaybackStateCompat.STATE_STOPPED:
-                    playPauseButton.setImageResource(R.drawable.play_icon);
-                    handler.removeCallbacks(null);
-                    break;
-
-                case PlaybackStateCompat.STATE_PLAYING:
-                    playPauseButton.setImageResource(R.drawable.pause_icon);
-                    handler.post(new Runnable() {
-                        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
-
-                        @Override
-                        public void run() {
-                            long playerPosition = (int) mediaController.getPlaybackState().getPosition();
-                            long songDuration = playlistService.getCurrentSong().getDuration();
-                            seekbar.setProgress((int) playerPosition);
-                            DateFormat formatter = new SimpleDateFormat("mm:ss");
-                            timer.setText(formatter.format(playerPosition) + " / " + formatter.format(songDuration));
-                            handler.postDelayed(this, 1000);
-                        }
-                    });
-                    break;
-
-                case PlaybackStateCompat.STATE_PAUSED:
-                    playPauseButton.setImageResource(R.drawable.play_icon);
-                    handler.removeCallbacks(null);
-                    break;
-
-                case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
-                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
-                    BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
-
-                    ListView list = playlistFragment.getPlaylist();
-
-                    int position = playlistService.getCurrentSongPosition();
-                    int previousPosition = playlistService.getPreviousSongPosition();
-                    int listSize = list.getCount();
-                    int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) / 2;
-
-                    list.requestFocus();
-                    if (previousPosition != listSize - 1) {
-                        list.setSelection(position - centerOfList);
-                    } else {
-                        list.setSelection(position);
-                    }
-                    playlistFragment.currentSongHighlight(playlistService.getCurrentSongPosition());
-                    break;
-
+        public void onConnected() {
+            try {
+                MediaControllerCompat mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
+                MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
+                buildTransportControls();
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
         }
+    };
 
+    protected ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
-        public void onMetadataChanged(MediaMetadataCompat metadata) {
-            super.onMetadataChanged(metadata);
-            seekbar.setMin(0);
-            seekbar.setMax((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
-            seekbar.setProgress(0);
-            timer.setText("0/0");
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
+            playlistService = musicRepositoryBinder.getService();
+            bound = true;
         }
 
         @Override
-        public void onSessionDestroyed() {
+        public void onServiceDisconnected(ComponentName componentName) {
 
         }
     };
 
-    SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
+    protected SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
             long songDuration = playlistService.getCurrentSong().getDuration();
@@ -291,27 +235,22 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
-            mediaController.getTransportControls().seekTo(seekbar.getProgress());
+            if(playlistService.getPlaylist()!=null) {
+                MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
+                mediaController.getTransportControls().seekTo(seekbar.getProgress());
+            }
         }
     };
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
-            PermissionsService.closeNotification(this);
-            setMainFragment();
-        }
-    }
-
-    @Override
     public void playSong() {
-        Uri uri = Uri.parse(playlistService.getCurrentSong().getPath());
-        MediaControllerCompat.getMediaController(MainActivity.this)
+        Song song = playlistService.getCurrentSong();
+        if(song!=null) {
+            Uri uri = Uri.parse(playlistService.getCurrentSong().getPath());
+            MediaControllerCompat.getMediaController(MainActivity.this)
                     .getTransportControls()
                     .playFromUri(uri, new Bundle());
+        }
     }
 
     @Override
@@ -325,6 +264,15 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         playlistService.setCurrentSongPosition(currentSongPosition);
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
+            PermissionsService.closeNotification(this);
+            setMainFragment();
+        }
+    }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -389,4 +337,84 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         }
     }
 
+    MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
+        @Override
+        public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            super.onPlaybackStateChanged(state);
+            currentState = state.getState();
+            ImageButton playPauseButton = findViewById(R.id.play);
+
+            switch (currentState) {
+                case PlaybackStateCompat.STATE_NONE:
+                case PlaybackStateCompat.STATE_STOPPED:
+                    playPauseButton.setImageResource(R.drawable.play_icon_black);
+                    handler.removeCallbacks(null);
+                    break;
+
+                case PlaybackStateCompat.STATE_PLAYING:
+                    playPauseButton.setImageResource(R.drawable.pause_icon_black);
+                    handler.removeCallbacks(null);
+                    handler.post(new Runnable() {
+                        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
+
+                        @Override
+                        public void run() {
+                            long playerPosition = (int) mediaController.getPlaybackState().getPosition();
+                            long songDuration = playlistService.getCurrentSong().getDuration();
+                            seekbar.setProgress((int) playerPosition);
+                            if(playerPosition > 0) {
+                                DateFormat formatter = new SimpleDateFormat("mm:ss");
+                                timer.setText(formatter.format(playerPosition) + " / " + formatter.format(songDuration));
+                            }else{
+                                timer.setText("0/0");
+                            }
+                            handler.postDelayed(this, 1000);
+                        }
+                    });
+                    break;
+
+                case PlaybackStateCompat.STATE_PAUSED:
+                    playPauseButton.setImageResource(R.drawable.play_icon_black);
+                    handler.removeCallbacks(null);
+                    break;
+
+                case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
+                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
+                    skipSong();
+                    break;
+            }
+        }
+
+        @Override
+        public void onMetadataChanged(MediaMetadataCompat metadata) {
+            super.onMetadataChanged(metadata);
+            seekbar.setMax((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
+            seekbar.setProgress(0);
+            timer.setText("0/0");
+        }
+
+        @Override
+        public void onSessionDestroyed() {
+
+        }
+    };
+
+    protected void skipSong(){
+        BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
+
+        ListView list = playlistFragment.getPlaylist();
+
+        int position = playlistService.getCurrentSongPosition();
+        int previousPosition = playlistService.getPreviousSongPosition();
+        int listSize = list.getCount();
+        int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) / 2;
+
+        list.requestFocus();
+        if (previousPosition != listSize - 1) {
+            list.setSelection(position - centerOfList);
+        } else {
+            list.setSelection(position);
+        }
+        playlistFragment.currentSongHighlight(playlistService.getCurrentSongPosition());
+    }
 }
