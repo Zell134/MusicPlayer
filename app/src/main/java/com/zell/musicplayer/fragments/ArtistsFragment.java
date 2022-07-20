@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MediaLibraryService;
-import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
 import java.util.List;
@@ -49,5 +48,12 @@ public class ArtistsFragment extends BaseFragment {
     protected void updatePlaylist(){
         playlist = getArtistList();
         updateAdapter();
+    }
+
+    public void onBackPressed(){
+        Item item = playlist.get(0);
+        if(item.getTitle().equals(getResources().getString(R.string.previous_directory))) {
+            onListItemClick(null, null, 0, 0);
+        }
     }
 }

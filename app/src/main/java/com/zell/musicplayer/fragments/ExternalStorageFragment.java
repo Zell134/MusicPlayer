@@ -8,7 +8,6 @@ import androidx.annotation.NonNull;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MediaLibraryService;
-import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
 import java.io.File;
@@ -46,5 +45,12 @@ public class ExternalStorageFragment extends BaseFragment {
             playlist = getFilelist(path);
         }
         updateAdapter();
+    }
+
+    public void onBackPressed(){
+        Item item = playlist.get(0);
+        if(item.getTitle().equals(getResources().getString(R.string.previous_directory))) {
+            onListItemClick(null, null, 0, 0);
+        }
     }
 }

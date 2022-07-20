@@ -7,13 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.ListFragment;
 
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.MusicPlayerService;
-import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.models.Item;
 
@@ -23,8 +22,10 @@ import java.util.List;
 public abstract class BaseFragment  extends ListFragment {
 
     protected abstract void updatePlaylist();
+    public abstract void onBackPressed();
 
-    protected ExternalStorageFragment.Listener listener;
+    protected Listener listener;
+
     public interface Listener{
         void setPlaylist(List<Item> playlist);
         void setCurrentSongPosition(int currentSong);
@@ -46,7 +47,7 @@ public abstract class BaseFragment  extends ListFragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        listener = (ExternalStorageFragment.Listener) context;
+        listener = (Listener) context;
     }
 
     @Override
@@ -60,16 +61,17 @@ public abstract class BaseFragment  extends ListFragment {
         setListAdapter(adapter);
     }
 
-    public ListView getplaylist(){
+    public ListView getPlaylist(){
         return getActivity().findViewById(android.R.id.list);
     }
 
     public void currentSongHighlight(int positiion){
         ListView listView = getActivity().findViewById(android.R.id.list);
+        LinearLayout layout = (LinearLayout) getViewByPosition(positiion, listView);
+
         if(currentLayout!=null){
             currentLayout.setBackgroundResource(R.color.default_list_color);
         }
-        LinearLayout layout = (LinearLayout) getViewByPosition(positiion, listView);
         layout.setBackgroundResource(R.color.selected_item);
         currentLayout = layout;
     }
@@ -83,5 +85,10 @@ public abstract class BaseFragment  extends ListFragment {
         } else {
             return list.getChildAt(childIndex);
         }
+    }
+
+    public void setPlaylist(List<Item> playlist) {
+        this.playlist = playlist;
+        updateAdapter();
     }
 }

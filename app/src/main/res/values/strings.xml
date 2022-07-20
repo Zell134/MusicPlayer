@@ -3,8 +3,8 @@
     <string name="permission_denied">Необходим доступ к хранилищу данных.</string>
     <string name="grant_denied">Предоставить доступ.</string>
     <string name="previous_directory">..</string>
-    <string name="nav_open_drawer">Open navigation drawer</string>
-    <string name="nav_close_drawer">Close navigation drawer</string>
+    <string name="nav_open_drawer">Открыть меню</string>
+    <string name="nav_close_drawer">Закрыть меню</string>
 
     <!--    Player-->
     <string name="playing">Проигрывается</string>
