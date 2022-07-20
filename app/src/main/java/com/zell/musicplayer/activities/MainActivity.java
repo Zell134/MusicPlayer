@@ -16,6 +16,8 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     public static final String LIBRARY_TYPE_ARTISTS = "Artists";
 
     private String LibraryType;
+    private MediaControllerCompat mediaController;
     private Handler handler = new Handler();
     private SeekBar seekbar;
     private TextView timer;
@@ -65,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
     private PlaylistService playlistService;
     private MediaBrowserCompat mediaBrowser;
     private boolean bound = false;
+    private DateFormat formatter = new SimpleDateFormat("mm:ss");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         setContentView(R.layout.activity_main);
         LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
         connectToMusicRepositoryService();
+        buildTransportControls();
 
         if (checkPermissions(this)) {
             setMainFragment();
@@ -82,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                     .commit();
         }
 
-            mediaBrowser = new MediaBrowserCompat(this,
+            mediaBrowser = new MediaBrowserCompat(getApplicationContext(),
                     new ComponentName(this, MusicPlayerService.class),
                     connectionCalback,
                     null);
@@ -99,12 +104,12 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    protected void connectToMusicRepositoryService(){
+    private void connectToMusicRepositoryService(){
         Intent intent = new Intent(this, PlaylistService.class);
         bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
-    protected void buildTransportControls() {
+    private void buildTransportControls() {
         seekbar = findViewById(R.id.seekbar);
         timer = findViewById(R.id.timer);
 
@@ -114,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         ImageButton nextButton = findViewById(R.id.next);
         ImageView exit = findViewById(R.id.exit);
         ImageView expandInfoButton = findViewById(R.id.expand_info);
-        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(this);
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
 
@@ -156,10 +160,10 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         expandInfoButton.setOnClickListener(view -> {
             if(playlistService.getPlaylist()!=null) {
                 Intent intent = new Intent(this, SongInfoActivity.class);
+                intent.putExtra(SongInfoActivity.CURRENT_STATE, currentState);
                 startActivity(intent);
             }
         });
-        mediaController.registerCallback(controllerCallback);
     }
 
     @Override
@@ -167,14 +171,25 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         super.onStart();
         if(!mediaBrowser.isConnected()) {
             mediaBrowser.connect();
+        }else{
+            mediaController.registerCallback(controllerCallback);
+            currentState = mediaController.getPlaybackState().getState();
+            hightlightSong();
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    setCurrentState();
+                    handler.postDelayed(this, 1000);
+                }
+            });
         }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (MediaControllerCompat.getMediaController(MainActivity.this) != null) {
-            MediaControllerCompat.getMediaController(MainActivity.this).unregisterCallback(controllerCallback);
+        if (mediaController != null) {
+            mediaController.unregisterCallback(controllerCallback);
         }
         if(bound){
             unbindService(serviceConnection);
@@ -184,29 +199,30 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
     @Override
     protected void onDestroy() {
-        MediaControllerCompat
-                .getMediaController(MainActivity.this)
+        mediaController
                 .getTransportControls()
                 .stop();
-        mediaBrowser.disconnect();
+        if(mediaBrowser.isConnected()) {
+            mediaBrowser.disconnect();
+        }
         NotificationManagerCompat.from(this).cancel(NotificationService.ID);
         super.onDestroy();
     }
 
-    protected final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             try {
-                MediaControllerCompat mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
+                mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
                 MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
-                buildTransportControls();
+                mediaController.registerCallback(controllerCallback);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
     };
 
-    protected ServiceConnection serviceConnection = new ServiceConnection() {
+    private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
@@ -220,7 +236,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         }
     };
 
-    protected SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
+    private SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
             long songDuration = playlistService.getCurrentSong().getDuration();
@@ -235,8 +251,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            if(playlistService.getPlaylist()!=null) {
-                MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
+            if(currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
                 mediaController.getTransportControls().seekTo(seekbar.getProgress());
             }
         }
@@ -247,7 +262,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         Song song = playlistService.getCurrentSong();
         if(song!=null) {
             Uri uri = Uri.parse(playlistService.getCurrentSong().getPath());
-            MediaControllerCompat.getMediaController(MainActivity.this)
+            mediaController
                     .getTransportControls()
                     .playFromUri(uri, new Bundle());
         }
@@ -309,7 +324,20 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         }
     }
 
-    public void setMainFragment(){
+    private void setCurrentState(){
+        MediaMetadataCompat metadata = mediaController.getMetadata();
+        long duration;
+        long position = mediaController.getPlaybackState().getPosition();
+        if(metadata != null) {
+             duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+        }else{
+            duration = 0;
+        }
+        seekbar.setProgress((int) position);
+        timer.setText(formatter.format(position) + " / " + formatter.format(duration));
+    }
+
+    private void setMainFragment(){
         switch (LibraryType) {
             case LIBRARY_TYPE_EXTERNAL_STORAGE:
                 setFragment(new ExternalStorageFragment());
@@ -337,7 +365,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         }
     }
 
-    MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
+    private MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             super.onPlaybackStateChanged(state);
@@ -355,19 +383,9 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
                     playPauseButton.setImageResource(R.drawable.pause_icon_black);
                     handler.removeCallbacks(null);
                     handler.post(new Runnable() {
-                        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(MainActivity.this);
-
                         @Override
                         public void run() {
-                            long playerPosition = (int) mediaController.getPlaybackState().getPosition();
-                            long songDuration = playlistService.getCurrentSong().getDuration();
-                            seekbar.setProgress((int) playerPosition);
-                            if(playerPosition > 0) {
-                                DateFormat formatter = new SimpleDateFormat("mm:ss");
-                                timer.setText(formatter.format(playerPosition) + " / " + formatter.format(songDuration));
-                            }else{
-                                timer.setText("0/0");
-                            }
+                            setCurrentState();
                             handler.postDelayed(this, 1000);
                         }
                     });
@@ -380,7 +398,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
                 case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
                 case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
-                    skipSong();
+                    hightlightSong();
                     break;
             }
         }
@@ -399,7 +417,7 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         }
     };
 
-    protected void skipSong(){
+    private void hightlightSong(){
         BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
 
         ListView list = playlistFragment.getPlaylist();

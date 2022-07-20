@@ -304,7 +304,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             if (albumArt != null) {
                 builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeByteArray(albumArt, 0, albumArt.length));
             } else {
-                builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeResource(getResources(), R.drawable.empty_album_art2));
+                builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeResource(getResources(), R.drawable.empty_album_art));
             }
 
 
