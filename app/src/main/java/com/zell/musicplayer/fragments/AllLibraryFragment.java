@@ -33,4 +33,8 @@ public class AllLibraryFragment extends BaseFragment {
         playlist = getSongsList();
         updateAdapter();
     }
+
+    public void onBackPressed(){
+
+    }
 }

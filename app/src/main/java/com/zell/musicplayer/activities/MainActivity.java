@@ -53,7 +53,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements AllLibraryFragment.Listener, NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity implements BaseFragment.Listener, NavigationView.OnNavigationItemSelectedListener{
 
     public static final String LIBRARY_TYPE_MEDIA_LIBRARY = "MediaLibrary";
     public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
@@ -240,7 +240,6 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
             long songDuration = playlistService.getCurrentSong().getDuration();
-            DateFormat formatter = new SimpleDateFormat("mm:ss");
             timer.setText(formatter.format(i) + " / " + formatter.format(songDuration));
         }
 
@@ -320,7 +319,8 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
+            playlistFragment.onBackPressed();
         }
     }
 
@@ -419,11 +419,23 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
 
     private void hightlightSong(){
         BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
-
-        ListView list = playlistFragment.getPlaylist();
-
         int position = playlistService.getCurrentSongPosition();
         int previousPosition = playlistService.getPreviousSongPosition();
+
+        ListView list = playlistFragment.getPlaylist();
+        if(list.getCount() < position){
+            playlistFragment.setPlaylist(playlistService.getPlaylist());
+            playlistFragment.getPlaylist();
+            list = playlistFragment.getPlaylist();
+        }else {
+            TextView songTitleView = (TextView) list.getAdapter().getView(position, null, list).findViewById(R.id.song_title);
+            if (!songTitleView.getText().equals(playlistService.getCurrentSong().getTitle())) {
+                playlistFragment.setPlaylist(playlistService.getPlaylist());
+                playlistFragment.getPlaylist();
+                list = playlistFragment.getPlaylist();
+            }
+        }
+
         int listSize = list.getCount();
         int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) / 2;
 
@@ -433,6 +445,6 @@ public class MainActivity extends AppCompatActivity implements AllLibraryFragmen
         } else {
             list.setSelection(position);
         }
-        playlistFragment.currentSongHighlight(playlistService.getCurrentSongPosition());
+        playlistFragment.currentSongHighlight(position);
     }
 }

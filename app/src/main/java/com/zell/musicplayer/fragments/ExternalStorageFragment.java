@@ -46,4 +46,11 @@ public class ExternalStorageFragment extends BaseFragment {
         }
         updateAdapter();
     }
+
+    public void onBackPressed(){
+        Item item = playlist.get(0);
+        if(item.getTitle().equals(getResources().getString(R.string.previous_directory))) {
+            onListItemClick(null, null, 0, 0);
+        }
+    }
 }
