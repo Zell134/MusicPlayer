@@ -1,7 +1,13 @@
 package com.zell.musicplayer.activities;
 
+import static com.zell.musicplayer.activities.MainActivity.ALBUM;
+import static com.zell.musicplayer.activities.MainActivity.ARTIST;
+import static com.zell.musicplayer.activities.MainActivity.DURATION;
+import static com.zell.musicplayer.activities.MainActivity.TITLE;
+
 import android.content.ComponentName;
 import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
@@ -16,13 +22,19 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.PropertiesService;
+import com.zell.musicplayer.models.Item;
+import com.zell.musicplayer.models.PlaylistViewModel;
+import com.zell.musicplayer.models.Song;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 
 public class SongInfoActivity extends AppCompatActivity {
 
@@ -37,7 +49,11 @@ public class SongInfoActivity extends AppCompatActivity {
     private TextView songInfo;
     private ImageView albumArt;
     private DateFormat formatter = new SimpleDateFormat("mm:ss");
-
+    private SharedCallback sharedCallback;
+    private PlaylistViewModel playlistViewModel;
+    private List<Item> playlist;
+    private int currentSong;
+    private int previousSong;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +70,15 @@ public class SongInfoActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         currentState = getIntent().getIntExtra(CURRENT_STATE, -1);
         buildTransportControls();
+        if (ContextCallback.getInstance().contextAssigned()) {
+            if (ContextCallback.getInstance().getContext() instanceof SharedCallback)
+                sharedCallback = (SharedCallback) ContextCallback.getInstance().getContext();
+            playlistViewModel = new ViewModelProvider((ViewModelStoreOwner) sharedCallback).get(PlaylistViewModel.class);
+            playlistViewModel.getPlaylist().observe(this, items -> {playlist = items;});
+            playlistViewModel.getCurrentSong().observe(this, items -> {currentSong = items;});
+            playlistViewModel.getPreviousSong().observe(this, items -> {previousSong = items;});
+            ContextCallback.freeContext();
+        }
     }
 
     @Override
@@ -186,6 +211,7 @@ public class SongInfoActivity extends AppCompatActivity {
 
                 case PlaybackStateCompat.STATE_PLAYING:
                     playPauseButton.setImageResource(R.drawable.pause_icon_black);
+                    setSongInfo();
                     handler.removeCallbacks(null);
                     handler.post(new Runnable() {
                         @Override
@@ -199,6 +225,19 @@ public class SongInfoActivity extends AppCompatActivity {
                 case PlaybackStateCompat.STATE_PAUSED:
                     playPauseButton.setImageResource(R.drawable.play_icon_black);
                     handler.removeCallbacks(null);
+                    break;
+
+                case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
+                    Song song = getNextSong();
+                    if(song != null){
+                        playSong();
+                    }
+                    break;
+                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
+                    song = getPreviousSong();
+                    if(song != null){
+                        playSong();
+                    }
                     break;
             }
         }
@@ -216,6 +255,20 @@ public class SongInfoActivity extends AppCompatActivity {
 
         }
     };
+
+    public void playSong() {
+        Song song = getCurrentSong();
+        if(song!=null) {
+            Bundle bundle = new Bundle();
+            bundle.putString(TITLE, song.getTitle());
+            bundle.putString(ALBUM, song.getAlbum());
+            bundle.putString(ARTIST, song.getArtist());
+            bundle.putLong(DURATION, song.getDuration());
+            mediaController
+                    .getTransportControls()
+                    .playFromUri(Uri.parse(song.getPath()), bundle);
+        }
+    }
 
     private SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
         @Override
@@ -237,4 +290,56 @@ public class SongInfoActivity extends AppCompatActivity {
             }
         }
     };
+
+    public Song getCurrentSong() {
+        return (Song)playlist.get(currentSong);
+    }
+
+    public Song getPreviousSong(){
+        int current = currentSong;
+        if(playlist!= null) {
+            int i = 0;
+            while (true) {
+                current--;
+                if (current < 0) {
+                    current = playlist.size() - 1;
+                }
+                Item item = playlist.get(current);
+                if (item.isAudioFile()) {
+                    playlistViewModel.setPreviousSong(currentSong);
+                    playlistViewModel.setCurrentSong(current);
+                    return (Song) item;
+                }
+                i++;
+                if (i >= playlist.size()) {
+                    break;
+                }
+            }
+        }
+        return null;
+    }
+
+    public Song getNextSong(){
+        int current = currentSong;
+        if(playlist != null) {
+            int i = 0;
+            while (true) {
+                current++;
+                if (current > playlist.size() - 1) {
+                    current = 0;
+                }
+                Item item = playlist.get(current);
+                if (item.isAudioFile()) {
+                    playlistViewModel.setPreviousSong(currentSong);
+                    playlistViewModel.setCurrentSong(current);
+                    return (Song) item;
+                }
+                i++;
+                if (i >= playlist.size()) {
+                    break;
+                }
+            }
+        }
+        return null;
+    }
 }
