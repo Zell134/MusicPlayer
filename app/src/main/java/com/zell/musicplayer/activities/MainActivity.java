@@ -2,22 +2,26 @@ package com.zell.musicplayer.activities;
 
 
 import static com.zell.musicplayer.Services.PermissionsService.checkPermissions;
+import static com.zell.musicplayer.activities.SongInfoActivity.CURRENT_STATE;
+import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_ARTISTS;
+import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE;
+import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY;
+import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
+import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -33,13 +37,17 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.R;
+import com.zell.musicplayer.Services.MediaLibraryService;
 import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.NotificationService;
 import com.zell.musicplayer.Services.PermissionsService;
-import com.zell.musicplayer.Services.PlaylistService;
+import com.zell.musicplayer.db.LibraryType;
+import com.zell.musicplayer.models.PlaylistViewModel;
+import com.zell.musicplayer.Services.PropertiesService;
 import com.zell.musicplayer.fragments.AllLibraryFragment;
 import com.zell.musicplayer.fragments.ArtistsFragment;
 import com.zell.musicplayer.fragments.BaseFragment;
@@ -50,33 +58,42 @@ import com.zell.musicplayer.models.Song;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 
-public class MainActivity extends AppCompatActivity implements BaseFragment.Listener, NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity implements BaseFragment.Listener, NavigationView.OnNavigationItemSelectedListener, SharedCallback{
 
-    public static final String LIBRARY_TYPE_MEDIA_LIBRARY = "MediaLibrary";
-    public static final String LIBRARY_TYPE_EXTERNAL_STORAGE = "ExternalStorage";
-    public static final String LIBRARY_TYPE_ARTISTS = "Artists";
+    public static String TITLE = "Title";
+    public static String ALBUM = "Album";
+    public static String ARTIST = "Artist";
+    public static String DURATION = "Duration";
 
-    private String LibraryType;
+    private LibraryType libraryType;
     private MediaControllerCompat mediaController;
     private Handler handler = new Handler();
     private SeekBar seekbar;
     private TextView timer;
     private int currentState;
-    private PlaylistService playlistService;
     private MediaBrowserCompat mediaBrowser;
-    private boolean bound = false;
     private DateFormat formatter = new SimpleDateFormat("mm:ss");
+    private Properties properties;
+    private List<Item> playlist;
+    private PlaylistViewModel playlistViewModel;
+    private int currentSong;
+    private int previousSong;
+    private Context context;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
-        connectToMusicRepositoryService();
-        buildTransportControls();
+        properties = PropertiesService.getAllProperties(this);
+        context = this;
+        libraryType = getLibraryTypeFromProps();
+
+        buildControls();
 
         if (checkPermissions(this)) {
             setMainFragment();
@@ -104,12 +121,7 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    private void connectToMusicRepositoryService(){
-        Intent intent = new Intent(this, PlaylistService.class);
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
-    }
-
-    private void buildTransportControls() {
+    private void buildControls() {
         seekbar = findViewById(R.id.seekbar);
         timer = findViewById(R.id.timer);
 
@@ -134,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
                     break;
                 case PlaybackStateCompat.STATE_PAUSED:
                     mediaController.getTransportControls().play();
+                    break;
             }
         });
 
@@ -158,9 +171,10 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
 
 
         expandInfoButton.setOnClickListener(view -> {
-            if(playlistService.getPlaylist()!=null) {
+            if(playlist!=null) {
+                ContextCallback.getInstance().setContext(context);
                 Intent intent = new Intent(this, SongInfoActivity.class);
-                intent.putExtra(SongInfoActivity.CURRENT_STATE, currentState);
+                intent.putExtra(CURRENT_STATE, currentState);
                 startActivity(intent);
             }
         });
@@ -169,12 +183,27 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
     @Override
     protected void onStart() {
         super.onStart();
+        if(playlistViewModel == null) {
+            playlistViewModel = new ViewModelProvider(this).get(PlaylistViewModel.class);
+        }
+        playlistViewModel.getPlaylist().observe(this, items -> {playlist = items;});
+        playlistViewModel.getCurrentSong().observe(this, items -> {currentSong = items;});
+        playlistViewModel.getPreviousSong().observe(this, items -> {previousSong = items;});
         if(!mediaBrowser.isConnected()) {
             mediaBrowser.connect();
         }else{
             mediaController.registerCallback(controllerCallback);
             currentState = mediaController.getPlaybackState().getState();
-            hightlightSong();
+            ImageButton playButton = findViewById(R.id.play);
+            if(currentState == PlaybackStateCompat.STATE_PLAYING){
+                playButton.setImageResource(R.drawable.pause_icon_black);
+            }else{
+                playButton.setImageResource(R.drawable.play_icon_black);
+            }
+            String songPath = properties.getProperty(CURRENT_SONG);
+            if(songPath!=null) {
+                fillPlaylistOnStart(songPath);
+            }
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -190,10 +219,6 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
         super.onStop();
         if (mediaController != null) {
             mediaController.unregisterCallback(controllerCallback);
-        }
-        if(bound){
-            unbindService(serviceConnection);
-            bound = false;
         }
     }
 
@@ -216,30 +241,22 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
                 mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
                 MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
                 mediaController.registerCallback(controllerCallback);
+                String songPath = properties.getProperty(CURRENT_SONG);
+                if(songPath!=null) {
+                    fillPlaylistOnStart(songPath);
+                    playSong();
+                }
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
     };
 
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
-            playlistService = musicRepositoryBinder.getService();
-            bound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-
-        }
-    };
 
     private SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-            long songDuration = playlistService.getCurrentSong().getDuration();
+            long songDuration = mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
             timer.setText(formatter.format(i) + " / " + formatter.format(songDuration));
         }
 
@@ -258,24 +275,30 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
 
     @Override
     public void playSong() {
-        Song song = playlistService.getCurrentSong();
+        Song song = getCurrentSong();
         if(song!=null) {
-            Uri uri = Uri.parse(playlistService.getCurrentSong().getPath());
+            Bundle bundle = new Bundle();
+            bundle.putString(TITLE, song.getTitle());
+            bundle.putString(ALBUM, song.getAlbum());
+            bundle.putString(ARTIST, song.getArtist());
+            bundle.putLong(DURATION, song.getDuration());
             mediaController
                     .getTransportControls()
-                    .playFromUri(uri, new Bundle());
+                    .playFromUri(Uri.parse(song.getPath()), bundle);
         }
     }
 
     @Override
     public void setPlaylist(List<Item> playlist){
-        playlistService.setPlaylist(playlist);
-        playlistService.setCurrentSongPosition(0);
+        playlistViewModel.setPlaylist(playlist);
+        playlistViewModel.setPreviousSong(0);
+        playlistViewModel.setCurrentSong(0);
     }
 
     @Override
     public void setCurrentSongPosition(int currentSongPosition){
-        playlistService.setCurrentSongPosition(currentSongPosition);
+        playlistViewModel.setPreviousSong(this.currentSong);
+        playlistViewModel.setCurrentSong(currentSongPosition);
     }
 
     @Override
@@ -292,13 +315,16 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch(item.getItemId()){
             case(R.id.external_storage):
-                LibraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
+                PropertiesService.setLibraryType(this, LIBRARY_TYPE_EXTERNAL_STORAGE);
+                libraryType = LIBRARY_TYPE_EXTERNAL_STORAGE;
                 break;
             case(R.id.all_media):
-                LibraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
+                PropertiesService.setLibraryType(this,LIBRARY_TYPE_MEDIA_LIBRARY);
+                libraryType = LIBRARY_TYPE_MEDIA_LIBRARY;
                 break;
             case(R.id.artists):
-                LibraryType = LIBRARY_TYPE_ARTISTS;
+                PropertiesService.setLibraryType(this,LIBRARY_TYPE_ARTISTS);
+                libraryType = LIBRARY_TYPE_ARTISTS;
                 break;
             case(R.id.exit):
                 onDestroy();
@@ -338,15 +364,20 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
     }
 
     private void setMainFragment(){
-        switch (LibraryType) {
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        Menu menu = navigationView.getMenu();
+        switch (libraryType) {
             case LIBRARY_TYPE_EXTERNAL_STORAGE:
                 setFragment(new ExternalStorageFragment());
+                menu.findItem(R.id.external_storage).setChecked(true);
                 break;
             case LIBRARY_TYPE_MEDIA_LIBRARY:
                 setFragment(new AllLibraryFragment());
+                menu.findItem(R.id.all_media).setChecked(true);
                 break;
             case LIBRARY_TYPE_ARTISTS:
                 setFragment(new ArtistsFragment());
+                menu.findItem(R.id.artists).setChecked(true);
                 break;
         }
     }
@@ -371,6 +402,7 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
             super.onPlaybackStateChanged(state);
             currentState = state.getState();
             ImageButton playPauseButton = findViewById(R.id.play);
+            Song song;
 
             switch (currentState) {
                 case PlaybackStateCompat.STATE_NONE:
@@ -380,6 +412,7 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
                     break;
 
                 case PlaybackStateCompat.STATE_PLAYING:
+                    PropertiesService.setCurrentSong(MainActivity.this, getCurrentSong().getPath());
                     playPauseButton.setImageResource(R.drawable.pause_icon_black);
                     handler.removeCallbacks(null);
                     handler.post(new Runnable() {
@@ -397,8 +430,18 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
                     break;
 
                 case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
+                    song = getNextSong();
+                    if(song != null){
+                        playSong();
+                        hightlightSong();
+                    }
+                    break;
                 case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
-                    hightlightSong();
+                    song = getPreviousSong();
+                    if(song != null){
+                        playSong();
+                        hightlightSong();
+                    }
                     break;
             }
         }
@@ -417,34 +460,131 @@ public class MainActivity extends AppCompatActivity implements BaseFragment.List
         }
     };
 
-    private void hightlightSong(){
+    private void hightlightSong() {
         BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
-        int position = playlistService.getCurrentSongPosition();
-        int previousPosition = playlistService.getPreviousSongPosition();
 
         ListView list = playlistFragment.getPlaylist();
-        if(list.getCount() < position){
-            playlistFragment.setPlaylist(playlistService.getPlaylist());
+        if (list.getCount() < currentSong) {
+            playlistFragment.setPlaylist(playlist);
             playlistFragment.getPlaylist();
             list = playlistFragment.getPlaylist();
-        }else {
-            TextView songTitleView = (TextView) list.getAdapter().getView(position, null, list).findViewById(R.id.song_title);
-            if (!songTitleView.getText().equals(playlistService.getCurrentSong().getTitle())) {
-                playlistFragment.setPlaylist(playlistService.getPlaylist());
-                playlistFragment.getPlaylist();
-                list = playlistFragment.getPlaylist();
-            }
         }
 
-        int listSize = list.getCount();
-        int centerOfList = (list.getLastVisiblePosition() - list.getFirstVisiblePosition()) / 2;
+        TextView songTitleView = list.getAdapter().getView(currentSong, null, list).findViewById(R.id.song_title);
+        if (!songTitleView.getText().equals(playlist.get(currentSong).getTitle())) {
+            playlistFragment.setPlaylist(playlist);
+            playlistFragment.getPlaylist();
+            list = playlistFragment.getPlaylist();
+        }
 
         list.requestFocus();
-        if (previousPosition != listSize - 1) {
-            list.setSelection(position - centerOfList);
-        } else {
-            list.setSelection(position);
+        int listSize = list.getCount();
+
+        if (previousSong != listSize - 1) {
+            list.setSelection(currentSong - 3);
+        }else {
+            list.setSelection(currentSong);
         }
-        playlistFragment.currentSongHighlight(position);
+        playlistFragment.currentSongHighlight(currentSong);
+    }
+
+    private LibraryType getLibraryTypeFromProps(){
+        switch ((String)properties.get(LIBRARY_TYPE)) {
+            case "MediaLibrary": {
+                return LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY;
+            }
+            case "ExternalStorage": {
+                return LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE;
+            }
+            case "Artists": {
+                return LibraryType.LIBRARY_TYPE_ARTISTS;
+            }
+        }
+        return null;
+    }
+
+    public void fillPlaylistOnStart(String songPath){
+        List<Item> playlist = new ArrayList<>();
+        BaseFragment playlistFragment = (BaseFragment) getSupportFragmentManager().findFragmentByTag("main");
+        switch (libraryType) {
+            case LIBRARY_TYPE_EXTERNAL_STORAGE:
+                playlist = ((ExternalStorageFragment)playlistFragment).getFilelist(songPath.substring(0, songPath.lastIndexOf("/")));
+                break;
+            case LIBRARY_TYPE_ARTISTS:
+                Song song = MediaLibraryService.getSongByPath(this, songPath);
+                playlist = MediaLibraryService.getSongsOfAlbum(this,song.getAlbum(),song.getArtist());
+                break;
+            case LIBRARY_TYPE_MEDIA_LIBRARY:
+                playlist = MediaLibraryService.getAllMedia(this);
+                break;
+        }
+        playlistFragment.setPlaylist(playlist);
+        setPlaylist(playlist);
+        int index = findSongIndexByPath(songPath);
+        if(index>=0) {
+            playlistViewModel.setCurrentSong(index);
+        }
+        hightlightSong();
+    }
+
+    public Song getCurrentSong() {
+        return (Song)playlist.get(currentSong);
+    }
+
+    public Song getPreviousSong(){
+        int current = currentSong;
+        if(playlist!= null) {
+            int i = 0;
+            while (true) {
+                current--;
+                if (current < 0) {
+                    current = playlist.size() - 1;
+                }
+                Item item = playlist.get(current);
+                if (item.isAudioFile()) {
+                    playlistViewModel.setPreviousSong(currentSong);
+                    playlistViewModel.setCurrentSong(current);
+                    return (Song) item;
+                }
+                i++;
+                if (i >= playlist.size()) {
+                    break;
+                }
+            }
+        }
+        return null;
+    }
+
+    public Song getNextSong(){
+        int current = currentSong;
+        if(playlist != null) {
+            int i = 0;
+            while (true) {
+                current++;
+                if (current > playlist.size() - 1) {
+                    current = 0;
+                }
+                Item item = playlist.get(current);
+                if (item.isAudioFile()) {
+                    playlistViewModel.setPreviousSong(currentSong);
+                    playlistViewModel.setCurrentSong(current);
+                    return (Song) item;
+                }
+                i++;
+                if (i >= playlist.size()) {
+                    break;
+                }
+            }
+        }
+        return null;
+    }
+
+    private int findSongIndexByPath(String songPath){
+     for(int i = 0; i<playlist.size(); i++){
+         if(playlist.get(i).getPath().equals(songPath)){
+             return i;
+         }
+     }
+     return -1;
     }
 }

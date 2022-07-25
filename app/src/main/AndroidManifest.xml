@@ -54,7 +54,7 @@
         </receiver>
 
         <service
-            android:name=".Services.PlaylistService"
+            android:name=".Services.PlaylistHelper"
             android:exported="false" />
     </application>
 

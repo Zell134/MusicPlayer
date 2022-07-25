@@ -49,9 +49,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     private AudioFocusRequest audioFocusRequest;
     private PlaybackStateCompat.Builder playbackStateBuilder;
     private int playbackState;
-    private PlaylistService playlistService;
-    private boolean bound;
-    private boolean isNotificationShown = false;
 
     @Override
     public void onCreate() {
@@ -70,7 +67,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         }
         initMediaPlayer();
         initMediaSession();
-        connectToMusicRepositoryService();
         notificationBuilder = new NotificationService(this, mediaSession).getBuilder();
     }
 
@@ -78,11 +74,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     public int onStartCommand(Intent intent, int flags, int startId) {
         MediaButtonReceiver.handleIntent(mediaSession, intent);
         return super.onStartCommand(intent, flags, startId);
-    }
-
-    private void connectToMusicRepositoryService(){
-        Intent intent = new Intent(this, PlaylistService.class);
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
     private void initMediaSession() {
@@ -132,10 +123,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             player.release();
         }
         NotificationManagerCompat.from(this).cancel(NotificationService.ID);
-        if(bound){
-            unbindService(serviceConnection);
-            bound=false;
-        }
         stopSelf();
     }
 
@@ -157,7 +144,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
 
         @Override
         public void onPlayFromUri(Uri uri, Bundle bundle) {
-            playFromUri();
+            playFromUri(uri, bundle);
         }
 
         @Override
@@ -189,30 +176,25 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
 
     public void skipToPrevious() {
         stop();
-        Song song = playlistService.getPreviousSong();
-        if(song != null) {
-            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
-            if (song != null) {
-                playFromUri();
-            }
-        }
+        setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
     }
 
     public void skipToNext() {
         stop();
-        Song song = playlistService.getNextSong();
-        if(song != null) {
-            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
-            if (song != null) {
-                playFromUri();
-            }
-        }
+        setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
     }
 
-    public void playFromUri() {
+    public void playFromUri(Uri uri, Bundle bundle) {
         if (ifAudioFocusGranted()) {
             player.reset();
-            setPlayerDataSource(playlistService.getCurrentSong());
+            Song song = new Song(uri.getPath(),
+                    bundle.getString(MainActivity.TITLE),
+                    bundle.getString(MainActivity.ALBUM),
+                    bundle.getString(MainActivity.ARTIST),
+                    bundle.getLong(MainActivity.DURATION),
+                    true 
+            );
+            setPlayerDataSource(song);
             mediaSession.setActive(true);
             setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
             showPlayingNotification();
@@ -235,7 +217,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         setMediaPlaybackState(PlaybackStateCompat.STATE_STOPPED);
         player.stop();
         NotificationManagerCompat.from(MusicPlayerService.this).cancel(NotificationService.ID);
-        isNotificationShown = false;
     }
 
     public void seekTo(long pos){
@@ -243,20 +224,6 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         player.seekTo((int) pos);
         play();
     }
-
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            PlaylistService.PlaylistServiceBinder musicRepositoryBinder = (PlaylistService.PlaylistServiceBinder) iBinder;
-            playlistService = musicRepositoryBinder.getService();
-            bound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            bound= false;
-        }
-    };
 
     private AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
         @Override

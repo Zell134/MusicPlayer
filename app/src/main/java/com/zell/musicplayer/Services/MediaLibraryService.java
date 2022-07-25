@@ -61,10 +61,23 @@ public class MediaLibraryService {
         getAlbumList(playlist, context, artist);
         return playlist;
     }
+
     public static List<Item> getSongsOfAlbum(Context context, String album, String artist){
         List<Item> playlist = new ArrayList<>();
         getSongsList(playlist, context, album, artist);
         return playlist;
+    }
+
+    public static Song getSongByPath(Context context, String path){
+        contentResolver = context.getContentResolver();
+        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String selection = MediaStore.Audio.Media.DATA + " LIKE ? ";
+        String[] selectionArgs = new String[]{path};
+        cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
+        if (cursor!=null && cursor.moveToFirst()) {
+            return (Song) getSongFromCursorRecord();
+        }
+        return null;
     }
 
     private static void getSongsList(List<Item> playlist, Context context, String album, String artist) {
@@ -85,6 +98,7 @@ public class MediaLibraryService {
             cursor.close();
         }
     }
+
     private static void getAlbumList(List<Item> playlist, Context context, String artist) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;

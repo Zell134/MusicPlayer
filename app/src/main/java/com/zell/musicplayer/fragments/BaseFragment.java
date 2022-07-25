@@ -40,7 +40,6 @@ public abstract class BaseFragment  extends ListFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         context = inflater.getContext();
-        updatePlaylist();
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -53,6 +52,7 @@ public abstract class BaseFragment  extends ListFragment {
     @Override
     public void onStart() {
         super.onStart();
+        updatePlaylist();
     }
 
     protected void updateAdapter() {
