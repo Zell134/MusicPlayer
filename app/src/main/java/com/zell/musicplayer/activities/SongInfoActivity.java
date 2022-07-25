@@ -2,29 +2,24 @@ package com.zell.musicplayer.activities;
 
 import android.content.ComponentName;
 import android.graphics.drawable.BitmapDrawable;
-import android.media.session.MediaSession;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.NotificationManagerCompat;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.MusicPlayerService;
-import com.zell.musicplayer.Services.NotificationService;
-import com.zell.musicplayer.Services.PlaylistService;
+import com.zell.musicplayer.Services.PropertiesService;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -121,6 +116,7 @@ public class SongInfoActivity extends AppCompatActivity {
     }
 
     private void setSongInfo(){
+        PropertiesService.setCurrentSong(SongInfoActivity.this, mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI));
         albumArt.setImageDrawable(new BitmapDrawable(mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)));
         long duration = mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
         seekbar.setMax((int) duration);
