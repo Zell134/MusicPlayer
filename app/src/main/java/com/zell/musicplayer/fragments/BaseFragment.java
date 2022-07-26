@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.ListFragment;
@@ -28,7 +27,7 @@ public abstract class BaseFragment  extends ListFragment {
 
     public interface Listener{
         void setPlaylist(List<Item> playlist);
-        void setCurrentSongPosition(int currentSong);
+        void setCurrentSongPosition(int position);
         void playSong();
     }
 
