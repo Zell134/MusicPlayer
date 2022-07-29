@@ -17,11 +17,15 @@ public class Playlist {
     }
 
     public Song getCurrentSong() {
-        try {
-            return (Song) playlist.get(currentSongPosition);
-        } catch (Exception e) {
-            return null;
+       Item item = playlist.get(currentSongPosition);
+        if(item.isAudioFile()){
+            return (Song) item;
         }
+        return null;
+    }
+
+    public Item getCurrentItem() {
+            return playlist.get(currentSongPosition);
     }
 
     public void setCurrentSongPosition(int currentSong) {
@@ -32,15 +36,15 @@ public class Playlist {
         return currentSongPosition;
     }
 
-    public int getPreviousSongPosition() {
-        return previousSongPosition;
+    public Item getItemAtPosition(int position){
+        return playlist.get(position);
     }
 
     public void setPreviousSongPosition(int previousSong) {
         this.previousSongPosition = previousSong;
     }
 
-    public Song getPreviousSong(){
+    public int getPreviousSongPosition(){
         int current = currentSongPosition;
         if(playlist!= null) {
             int i = 0;
@@ -51,9 +55,7 @@ public class Playlist {
                 }
                 Item item = playlist.get(current);
                 if (item.isAudioFile()) {
-                    previousSongPosition = currentSongPosition;
-                    currentSongPosition = current;
-                    return (Song) item;
+                    return current;
                 }
                 i++;
                 if (i >= playlist.size()) {
@@ -61,10 +63,10 @@ public class Playlist {
                 }
             }
         }
-        return null;
+        return -1;
     }
 
-    public Song getNextSong(){
+    public int getNextSongPosition(){
         int current = currentSongPosition;
         if(playlist != null) {
             int i = 0;
@@ -75,9 +77,7 @@ public class Playlist {
                 }
                 Item item = playlist.get(current);
                 if (item.isAudioFile()) {
-                    previousSongPosition = currentSongPosition;
-                    currentSongPosition = current;
-                    return (Song) item;
+                    return current;
                 }
                 i++;
                 if (i >= playlist.size()) {
@@ -85,7 +85,7 @@ public class Playlist {
                 }
             }
         }
-        return null;
+        return -1;
     }
 
     public int findSongIndexByPath(String songPath){
