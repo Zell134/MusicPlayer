@@ -5,6 +5,8 @@
     <string name="previous_directory">..</string>
     <string name="nav_open_drawer">Открыть меню</string>
     <string name="nav_close_drawer">Закрыть меню</string>
+    <string name="album_atr_hint">Изображение альбома</string>
+    <string name="default_duration">Изображение альбома</string>
 
     <!--    Player-->
     <string name="playing">Проигрывается</string>

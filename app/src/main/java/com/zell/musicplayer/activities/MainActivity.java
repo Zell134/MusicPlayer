@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
     private final Handler handler = new Handler();
     private SeekBar seekbar;
     private TextView timer;
+    private TextView songName;
     private TextView songInfo;
     private ImageView albumArt;
     private int currentState;
@@ -109,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         ImageButton stopButton = findViewById(R.id.stop);
         ImageButton previousButton = findViewById(R.id.previous);
         ImageButton nextButton = findViewById(R.id.next);
+        songName = findViewById(R.id.playing_song_name);
         songInfo = findViewById(R.id.playing_song_info);
         albumArt = findViewById(R.id.album_art);
         seekbar = findViewById(R.id.seekbar);
@@ -296,10 +298,15 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
         albumArt.setImageDrawable(new BitmapDrawable(mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)));
         StringBuilder str = new StringBuilder();
-        str.append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
-                .append(" - ").append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE))
-                .append(" (").append(formatter.format(duration))
+        str.append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE))
+                .append(" (")
+                .append(formatter.format(duration))
                 .append(")");
+        songName.setText(str);
+        str = new StringBuilder();
+        str.append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
+                .append(" - ")
+                .append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
         songInfo.setText(str);
     }
 
