@@ -14,12 +14,18 @@
             android:title="@string/all_media_library" />
         <item
             android:id="@+id/artists"
-            android:checked="true"
             android:icon="@android:drawable/btn_star"
             android:title="@string/artists" />
+    </group>
+
+        <item
+            android:id="@+id/menu_equalizer"
+            android:icon="@drawable/equalizer_icon"
+            android:title="@string/equalizer_string" />
+
         <item
             android:id="@+id/exit"
             android:icon="@android:drawable/ic_menu_close_clear_cancel"
             android:title="@string/exit" />
-    </group>
+
 </menu>

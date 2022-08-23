@@ -42,8 +42,8 @@ import com.zell.musicplayer.Services.NotificationService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.Services.PropertiesService;
-import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.db.LibraryType;
+import com.zell.musicplayer.fragments.EqualizerFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.fragments.PlaylistFragment;
 import com.zell.musicplayer.models.Song;
@@ -52,7 +52,7 @@ import java.text.SimpleDateFormat;
 import java.util.Properties;
 
 
-public class MainActivity extends AppCompatActivity implements SongAdapter.Listener, NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     public static String TITLE = "Title";
     public static String ALBUM = "Album";
@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
     private final SimpleDateFormat formatter = new SimpleDateFormat("mm:ss");
     private Properties properties;
     private PlaylistService playlistService;
+    private boolean ifEualizerOpened = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         ImageButton stopButton = findViewById(R.id.stop);
         ImageButton previousButton = findViewById(R.id.previous);
         ImageButton nextButton = findViewById(R.id.next);
+        ImageButton equalizerButton = findViewById(R.id.equqlizer_button);
         songName = findViewById(R.id.playing_song_name);
         songInfo = findViewById(R.id.playing_song_info);
         albumArt = findViewById(R.id.album_art);
@@ -150,6 +152,8 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
             onDestroy();
             System.exit(0);
         });
+
+        equalizerButton.setOnClickListener(view -> equalizerButtonOnClick());
     }
 
     @Override
@@ -218,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
             }
         }
     };
-    @Override
+
     public void playSong(Song song) {
         if(song!=null) {
 
@@ -258,6 +262,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
                 PropertiesService.setLibraryType(this,LIBRARY_TYPE_ARTISTS);
                 playlistService.setLibraryType(LIBRARY_TYPE_ARTISTS);
                 break;
+            case(R.id.menu_equalizer):
+                equalizerButtonOnClick();
+                break;
             case(R.id.exit):
                 onDestroy();
                 System.exit(0);
@@ -275,7 +282,11 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
+        } else if (ifEualizerOpened){
+            setMainFragment();
+            ifEualizerOpened = false;
+        }else
+        {
             playlistService.onBackPressed();
         }
     }
@@ -407,5 +418,22 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
             }
         }
         return null;
+    }
+
+    public void setAdapterAndScroll(){
+        if(playlistService != null) {
+            playlistService.setAdapter();
+            playlistService.scrollToCurrentPosition();
+        }
+    }
+
+    private void equalizerButtonOnClick(){
+        if(ifEualizerOpened){
+            setMainFragment();
+            ifEualizerOpened = false;
+        }else {
+            setFragment(new EqualizerFragment());
+            ifEualizerOpened = true;
+        }
     }
 }

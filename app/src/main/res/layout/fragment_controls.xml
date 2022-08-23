@@ -118,6 +118,15 @@
             android:scaleType="centerCrop"
             android:src="@drawable/next_icon_black" />
 
+        <ImageButton
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="1dp"
+            android:background="@color/default_list_color"
+            android:src="@drawable/equalizer_icon"
+            android:scaleType="centerCrop"
+            android:id="@+id/equqlizer_button"/>
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
