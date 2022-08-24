@@ -32,7 +32,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void updateDB(SQLiteDatabase db, int oldVersion, int newVersion){
         if (oldVersion < 1) {
             db.execSQL("CREATE TABLE PROPERTIES (_id INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT,VALUE TEXT);");
-            insertProperty(db, PropertiesList.LIBRARY_TYPE, LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE.getValue());
+            insertProperty(db, PropertiesList.LIBRARY_TYPE, LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY.getValue());
         }
     }
 

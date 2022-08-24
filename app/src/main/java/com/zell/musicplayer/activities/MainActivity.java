@@ -5,11 +5,16 @@ import static com.zell.musicplayer.Services.PermissionsService.checkPermissions;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_ARTISTS;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY;
+import static com.zell.musicplayer.db.PropertiesList.BASS_BOOST;
 import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
+import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
+import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
 
 import android.content.ComponentName;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.audiofx.BassBoost;
+import android.media.audiofx.Equalizer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -42,17 +47,18 @@ import com.zell.musicplayer.Services.NotificationService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.Services.PlaylistService;
 import com.zell.musicplayer.Services.PropertiesService;
-import com.zell.musicplayer.adapters.SongAdapter;
 import com.zell.musicplayer.db.LibraryType;
+import com.zell.musicplayer.fragments.EqualizerFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.fragments.PlaylistFragment;
+import com.zell.musicplayer.models.Player;
 import com.zell.musicplayer.models.Song;
 
 import java.text.SimpleDateFormat;
 import java.util.Properties;
 
 
-public class MainActivity extends AppCompatActivity implements SongAdapter.Listener, NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     public static String TITLE = "Title";
     public static String ALBUM = "Album";
@@ -63,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
     private final Handler handler = new Handler();
     private SeekBar seekbar;
     private TextView timer;
+    private TextView songName;
     private TextView songInfo;
     private ImageView albumArt;
     private int currentState;
@@ -70,14 +77,15 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
     private final SimpleDateFormat formatter = new SimpleDateFormat("mm:ss");
     private Properties properties;
     private PlaylistService playlistService;
+    private boolean ifEqualizerOpened = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        properties = PropertiesService.getAllProperties(this);
 
         if (checkPermissions(this)) {
-            properties = PropertiesService.getAllProperties(this);
             setMainFragment();
         } else {
             setFragment(new PermissionFragment());
@@ -85,7 +93,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
 
         mediaBrowser = new MediaBrowserCompat(getApplicationContext(),
                 new ComponentName(this, MusicPlayerService.class),
-                connectionCalback,
+                connectionCallback,
                 null);
 
         setToolbar();
@@ -109,13 +117,14 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         ImageButton stopButton = findViewById(R.id.stop);
         ImageButton previousButton = findViewById(R.id.previous);
         ImageButton nextButton = findViewById(R.id.next);
+        ImageButton equalizerButton = findViewById(R.id.equqlizer_button);
+        songName = findViewById(R.id.playing_song_name);
         songInfo = findViewById(R.id.playing_song_info);
         albumArt = findViewById(R.id.album_art);
         seekbar = findViewById(R.id.seekbar);
         timer = findViewById(R.id.timer);
         ImageView exit = findViewById(R.id.exit);
         playlistService = new PlaylistService(this, getLibraryTypeFromProps(), properties.getProperty(CURRENT_SONG));
-
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
         playButton.setOnClickListener(view -> {
@@ -148,15 +157,45 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
             onDestroy();
             System.exit(0);
         });
+
+        equalizerButton.setOnClickListener(view -> equalizerButtonOnClick());
+    }
+
+    private void setEqualizer(){
+        Player player = Player.getInstance();
+        Equalizer equalizer = player.getEqualizer();
+        BassBoost bassBoost = player.getBassBoost();
+
+        properties.forEach((k, v) -> {
+            String key = k.toString();
+            if(key.contains(EQUALIZER)){
+                short band = Short.parseShort(key.split(DELIMITER)[1]);
+                equalizer.setBandLevel(band,Short.parseShort(v.toString()));
+            }
+        } );
+
+        if(properties.contains(BASS_BOOST)) {
+            if (bassBoost.getStrengthSupported()) {
+                bassBoost.setStrength(Short.parseShort(properties.getProperty(BASS_BOOST)));
+            }
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         if (checkPermissions(this)) {
+            mediaBrowserConnection();
+        }
+    }
+
+    private void mediaBrowserConnection(){
+        try {
             if (!mediaBrowser.isConnected()) {
                 mediaBrowser.connect();
             }
+        }catch(IllegalStateException e){
+            mediaBrowser.connect();
         }
     }
 
@@ -182,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         super.onDestroy();
     }
 
-    private final MediaBrowserCompat.ConnectionCallback connectionCalback = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             try {
@@ -190,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
                 MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
                 mediaController.registerCallback(controllerCallback);
                 buildControls();
+                setEqualizer();
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -216,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
             }
         }
     };
-    @Override
+
     public void playSong(Song song) {
         if(song!=null) {
 
@@ -236,6 +276,7 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
+            mediaBrowserConnection();
             PermissionsService.closeNotification(this);
             setMainFragment();
         }
@@ -256,6 +297,9 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
                 PropertiesService.setLibraryType(this,LIBRARY_TYPE_ARTISTS);
                 playlistService.setLibraryType(LIBRARY_TYPE_ARTISTS);
                 break;
+            case(R.id.menu_equalizer):
+                equalizerButtonOnClick();
+                break;
             case(R.id.exit):
                 onDestroy();
                 System.exit(0);
@@ -273,7 +317,11 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
+        } else if (ifEqualizerOpened){
+            setMainFragment();
+            ifEqualizerOpened = false;
+        }else
+        {
             playlistService.onBackPressed();
         }
     }
@@ -296,10 +344,15 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
         albumArt.setImageDrawable(new BitmapDrawable(mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)));
         StringBuilder str = new StringBuilder();
-        str.append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
-                .append(" - ").append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE))
-                .append(" (").append(formatter.format(duration))
+        str.append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE))
+                .append(" (")
+                .append(formatter.format(duration))
                 .append(")");
+        songName.setText(str);
+        str = new StringBuilder();
+        str.append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
+                .append(" - ")
+                .append(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
         songInfo.setText(str);
     }
 
@@ -401,4 +454,22 @@ public class MainActivity extends AppCompatActivity implements SongAdapter.Liste
         }
         return null;
     }
+
+    public void setAdapterAndScroll(){
+        if(playlistService != null) {
+            playlistService.setAdapter();
+            playlistService.scrollToCurrentPosition();
+        }
+    }
+
+    private void equalizerButtonOnClick(){
+        if(ifEqualizerOpened){
+            setMainFragment();
+            ifEqualizerOpened = false;
+        }else {
+            setFragment(new EqualizerFragment());
+            ifEqualizerOpened = true;
+        }
+    }
+
 }

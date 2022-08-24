@@ -1,10 +1,12 @@
 package com.zell.musicplayer.Services;
 
 
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.MediaStore;
 
 import com.zell.musicplayer.R;
@@ -44,6 +46,7 @@ public class MediaLibraryService {
         return playlist;
     }
 
+    @SuppressLint("NewApi")
     public static List<Item> getFilesList(Context context, File file) {
         List<Item> playlist = new ArrayList<>();
         File previousFile = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf("/")));

@@ -30,44 +30,29 @@ import java.util.function.Supplier;
 
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHolder> {
 
-    private final Playlist playlist = new Playlist();
     private SongAdapter.Listener listener;
-    private LibraryType libraryType;
+    private List<Item> playlist;
 
     public interface Listener {
-        void playSong(Song song);
+        void itemSelected(int position);
+        int getCurrentSongPosition();
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public SongAdapter(Context context, List<Item> playlist, LibraryType libraryType) {
+    public SongAdapter(Listener listener, List<Item> playlist) {
         setPlaylist(playlist);
-        this.libraryType = libraryType;
-        listener = (SongAdapter.Listener) context;
+        this.listener = listener;
     }
 
     @SuppressLint("NotifyDataSetChanged")
     public void setPlaylist(List<Item> playlist) {
-        this.playlist.setPlaylist(playlist);
-        this.playlist.setPreviousSongPosition(0);
-        this.playlist.setCurrentSongPosition(0);
+        this.playlist = playlist;
         notifyDataSetChanged();
     }
 
-    public void serCurrentSongPosition(int position) {
-        playlist.setCurrentSongPosition(position);
-    }
-
-    private void setSelectedPosition(int position) {
-        notifyItemChanged(playlist.getCurrentSongPosition());
-        playlist.setCurrentSongPosition(position);
-        notifyItemChanged(playlist.getCurrentSongPosition());
-    }
-
-    public void play() {
-        Song song = playlist.getCurrentSong();
-        if (song != null) {
-            listener.playSong(song);
-        }
+    public void setSelectedPosition(int oldPosition, int newPosition) {
+        notifyItemChanged(oldPosition);
+        notifyItemChanged(newPosition);
     }
 
     @NonNull
@@ -80,13 +65,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
 
     @Override
     public void onBindViewHolder(@NonNull PlaylistViewHolder holder, int position) {
-        holder.bind(playlist.getItemAtPosition(position));
-        holder.itemView.setBackgroundResource(playlist.getCurrentSongPosition() == position ? R.color.selected_item : R.color.default_list_color);
+        holder.bind(playlist.get(position), position);
+        holder.itemView.setBackgroundResource(listener.getCurrentSongPosition() == position ? R.color.selected_item : R.color.default_list_color);
     }
 
     @Override
     public int getItemCount() {
-        return playlist.getPlaylist().size();
+        return playlist.size();
     }
 
     public class PlaylistViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -95,12 +80,16 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
             itemView.setOnClickListener(this);
         }
 
-        public void bind(Item song) {
+        public void bind(Item song, int position) {
             ImageView icon = itemView.findViewById(R.id.content_icon);
             TextView songView = itemView.findViewById(R.id.song_title);
             TextView artistView = itemView.findViewById(R.id.song_artist);
 
-            songView.setText(song.getTitle());
+            if(position == 0){
+                songView.setText(song.getTitle());
+            }else {
+                songView.setText(String.valueOf(position) + ". " + song.getTitle());
+            }
             if (song.isAudioFile()) {
                 artistView.setText(((Song) song).getArtist());
                 icon.setImageResource(R.drawable.music_icon);
@@ -112,83 +101,9 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
 
         @Override
         public void onClick(View view) {
-            if (getBindingAdapterPosition() == RecyclerView.NO_POSITION) return;
             int position = getBindingAdapterPosition();
-            Item item = playlist.getItemAtPosition(position);
-            if (item.isAudioFile()) {
-                setSelectedPosition(position);
-                play();
-            } else {
-                playlist.setCurrentSongPosition(position);
-                onItemSelect();
-            }
+            if (position == RecyclerView.NO_POSITION) return;
+            listener.itemSelected(position);
         }
-    }
-
-    public void onBackPressed() {
-        if (libraryType != LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY) {
-            if (playlist.getItemAtPosition(0).getTitle().equals(((Context) listener).getResources().getString(R.string.previous_directory))) {
-                playlist.setCurrentSongPosition(0);
-                onItemSelect();
-            }
-        }
-    }
-
-    public void onItemSelect() {
-        Item item = playlist.getCurrentItem();
-        Context context = (Context) listener;
-        List<Item> playlist = new ArrayList<>();
-        switch (libraryType) {
-            case LIBRARY_TYPE_EXTERNAL_STORAGE: {
-                if (item.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
-                    String filePath = item.getPath();
-                    playlist = MediaLibraryService.getFilesList(context, new File(filePath.substring(0, filePath.lastIndexOf("/"))));
-                } else {
-                    playlist = MediaLibraryService.getFilesList(context, new File(item.getPath()));
-                }
-                break;
-            }
-            case LIBRARY_TYPE_ARTISTS: {
-                if (item.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
-                    if (item.getPath().equals("root")) {
-                        playlist = MediaLibraryService.getArtistList(context);
-                    } else {
-                        playlist = MediaLibraryService.getAlbumsOfArtist(context, item.getPath());
-                    }
-                } else {
-                    if (!item.getPath().equals("root")) {
-                        playlist = MediaLibraryService.getSongsOfAlbum(context, item.getTitle(), item.getPath());
-                    } else {
-                        playlist = MediaLibraryService.getAlbumsOfArtist(context, item.getTitle());
-                    }
-                }
-                break;
-            }
-        }
-        setPlaylist(playlist);
-    }
-
-    public void playNextSong() {
-        int newPosition = playlist.getNextSongPosition();
-        if (newPosition > 0) {
-            setSelectedPosition(newPosition);
-            scrollToPosition(newPosition);
-        }
-        play();
-    }
-
-    public void playPreviousSong() {
-        int newPosition = playlist.getPreviousSongPosition();
-        if (newPosition > 0) {
-            setSelectedPosition(newPosition);
-            scrollToPosition(newPosition);
-        }
-        play();
-    }
-
-    public void scrollToPosition(int position) {
-        RecyclerView list = ((AppCompatActivity) listener).findViewById(R.id.playlist);
-        LinearLayoutManager layoutManager = (LinearLayoutManager) list.getLayoutManager();
-        layoutManager.scrollToPosition(position);
     }
 }

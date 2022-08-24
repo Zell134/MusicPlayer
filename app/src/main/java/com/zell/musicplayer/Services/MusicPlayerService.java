@@ -1,37 +1,36 @@
 package com.zell.musicplayer.Services;
 
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.graphics.BitmapFactory;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.media.audiofx.Equalizer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
-import androidx.core.graphics.drawable.IconCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.activities.MainActivity;
+import com.zell.musicplayer.models.Player;
 import com.zell.musicplayer.models.Song;
 
 import java.io.IOException;
@@ -105,7 +104,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
 
     private void initMediaPlayer() {
         if(player == null) {
-            player = new MediaPlayer();
+            player = Player.getInstance().getPlayer();
             player.setOnPreparedListener(this);
             player.setOnCompletionListener(this);
             player.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
@@ -119,9 +118,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         if(mediaSession!=null) {
             mediaSession.release();
         }
-        if(player!=null){
-            player.release();
-        }
+        Player.getInstance().destroy();
         NotificationManagerCompat.from(this).cancel(NotificationService.ID);
         stopSelf();
     }
@@ -418,5 +415,9 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         skipToNext();
+    }
+
+    public int getAudioSession(){
+        return player.getAudioSessionId();
     }
 }

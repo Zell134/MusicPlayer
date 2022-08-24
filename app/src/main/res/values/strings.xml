@@ -5,6 +5,14 @@
     <string name="previous_directory">..</string>
     <string name="nav_open_drawer">Открыть меню</string>
     <string name="nav_close_drawer">Закрыть меню</string>
+    <string name="album_atr_hint">Изображение альбома</string>
+    <string name="default_duration">0/0</string>
+    <string name="custom_eualizer">Пользовательский</string>
+    <string name="echo_canceler">Подавитель эха</string>
+    <string name="noise_suppressor">Подавитель шума</string>
+    <string name="bass_bost">Bass Boost</string>
+    <string name="equalizer_string">Эквалайзер</string>
+    <string name="bass_boost_not_supported_message">Bass Boost не поддерживается Вашим устройством</string>
 
     <!--    Player-->
     <string name="playing">Проигрывается</string>
