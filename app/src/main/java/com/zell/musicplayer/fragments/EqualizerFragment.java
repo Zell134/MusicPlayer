@@ -16,12 +16,16 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.zell.musicplayer.R;
+import com.zell.musicplayer.Services.PropertiesService;
+import com.zell.musicplayer.activities.MainActivity;
 import com.zell.musicplayer.models.Player;
 
 import java.util.ArrayList;
@@ -32,32 +36,45 @@ public class EqualizerFragment extends Fragment {
     private Equalizer equalizer;
     private BassBoost bassBoost;
     private LinearLayout slidersContainer;
-    private AcousticEchoCanceler echoCanceler;
+    private Context context;
+    private Spinner presetsSpinner;
+    private SeekBar bassBoostBar;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        context = getActivity();
         return inflater.inflate(R.layout.fragment_equalizer, container, false);
     }
 
     @Override
     public void onStart() {
         super.onStart();
+        ImageButton backButton = ((AppCompatActivity)context).findViewById(R.id.back_button);
+        backButton.setOnClickListener(view -> ((AppCompatActivity)context).onBackPressed());
 
-        ImageButton backButton = getActivity().findViewById(R.id.back_button);
-        backButton.setOnClickListener(view -> getActivity().onBackPressed());
-
-        Context context = getActivity();
         equalizer = Player.getInstance().getEqualizer();
         bassBoost = Player.getInstance().getBassBoost();
         if(equalizer!=null) {
-            fillSpinner(context);
-            addSliders(context);
+            addSliders();
+            fillSpinner();
         }
     }
 
-    private void fillSpinner(Context context){
-        Spinner spinner = getActivity().findViewById(R.id.preset_list);
+    @Override
+    public void onStop() {
+        super.onStop();
+        for (short i = 0; i < equalizer.getNumberOfBands(); i++) {
+            PropertiesService.setEqualizerBand(context, i, String.valueOf(equalizer.getBandLevel(i)));
+        }
+        PropertiesService.setCurrentPreset(context, String.valueOf(presetsSpinner.getSelectedItemPosition()));
+        if(bassBoostBar !=null) {
+            PropertiesService.setBassBoostValue(context, String.valueOf(bassBoostBar.getProgress()));
+        }
+    }
+
+    private void fillSpinner(){
+        presetsSpinner = ((AppCompatActivity)context).findViewById(R.id.preset_list);
         List<String> list = new ArrayList<>();
         list.add(getResources().getString(R.string.custom_eualizer));
         for (int i = 0; i < equalizer.getNumberOfPresets(); i++) {
@@ -65,22 +82,25 @@ public class EqualizerFragment extends Fragment {
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(context,
                 android.R.layout.simple_spinner_item, list);
-        spinner.setAdapter(adapter);
-        spinner.setSelection(Player.getInstance().getCurrentPreset() + 1);
-        spinner.setOnItemSelectedListener(spinnerItemSelectedListener);
+        presetsSpinner.setAdapter(adapter);
+        String preset = PropertiesService.getCurrentPreset(context);
+        if(preset != null) {
+            presetsSpinner.setSelection(Integer.parseInt(preset));
+        }
+        presetsSpinner.setOnItemSelectedListener(spinnerItemSelectedListener);
     }
 
-    private void addSliders(Context context){
+    private void addSliders(){
         int slidersCount = equalizer.getNumberOfBands();
         short minEQLevel = equalizer.getBandLevelRange()[0];
         short maxEQLevel = equalizer.getBandLevelRange()[1];
-        slidersContainer = getActivity().findViewById(R.id.sliders_container);
+        slidersContainer = ((AppCompatActivity)context).findViewById(R.id.sliders_container);
 
-        for (int i = 0; i < slidersCount; i++) {
+        for (short i = 0; i < slidersCount; i++) {
             TextView freqTextView = new TextView(context);
             freqTextView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             freqTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-            freqTextView.setText((equalizer.getCenterFreq((short) i) / 1000) + " Hz");
+            freqTextView.setText((equalizer.getCenterFreq( i) / 1000) + " Hz");
             slidersContainer.addView(freqTextView);
 
             LinearLayout row = new LinearLayout(context);
@@ -102,7 +122,7 @@ public class EqualizerFragment extends Fragment {
             bar.setLayoutParams(layoutParams);
             bar.setMax(maxEQLevel - minEQLevel);
             bar.setTag(i);
-            bar.setProgress(equalizer.getBandLevel((short) i));
+            bar.setProgress(equalizer.getBandLevel(i) - minEQLevel);
             bar.setOnSeekBarChangeListener(seekBarChangeListener);
 
             row.addView(minEqLevelTextView);
@@ -111,7 +131,7 @@ public class EqualizerFragment extends Fragment {
             slidersContainer.addView(row);
         }
 
-        if(bassBoost.getStrengthSupported()) {
+
             TextView textView = new TextView(context);
             textView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -133,54 +153,27 @@ public class EqualizerFragment extends Fragment {
             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             layoutParams.weight = 1;
             layoutParams.setMargins(0, 0, 0, 10);
-            SeekBar bar = new SeekBar(context);
-            bar.setLayoutParams(layoutParams);
-            bar.setMax(1000);
-            bar.setProgress(Player.getInstance().getCurrentBassBoostStrength());
-            bar.setOnSeekBarChangeListener(bassBoostChangeListener);
+            bassBoostBar = new SeekBar(context);
+            bassBoostBar.setLayoutParams(layoutParams);
+            bassBoostBar.setMax(1000);
+            if(bassBoostBar != null) {
+                String value = PropertiesService.getBassBoostValue(context);
+                if (value != null) {
+                    bassBoostBar.setProgress(Integer.parseInt(value));
+                }
+            }
+            bassBoostBar.setOnSeekBarChangeListener(bassBoostChangeListener);
 
             row.addView(minEqLevelTextView);
-            row.addView(bar);
+            row.addView(bassBoostBar);
             row.addView(maxEqLevelTextView);
             slidersContainer.addView(row);
-        }
-
-        echoCanceler = Player.getInstance().getEchoCanceler();
-        if(AcousticEchoCanceler.isAvailable() && echoCanceler != null) {
-            LinearLayout echoCancelerLayout = new LinearLayout(context);
-            echoCancelerLayout.setOrientation(LinearLayout.HORIZONTAL);
-            echoCancelerLayout.setPadding(0,0,10,0);
-
-            Switch echoCancelerSwitch = new Switch(context);
-            echoCancelerSwitch.setOnClickListener(view -> echoCanceler.setEnabled(echoCancelerSwitch.isEnabled()));
-            TextView echoCancelerTextView = new TextView(context);
-            echoCancelerTextView.setText(getResources().getString(R.string.echo_canceler));
-            echoCancelerLayout.addView(echoCancelerTextView);
-            echoCancelerLayout.addView(echoCancelerSwitch);
-            slidersContainer.addView(echoCancelerLayout);
-        }
-
-        NoiseSuppressor noiseSuppressor = Player.getInstance().getNoiseSuppressor();
-        if(NoiseSuppressor.isAvailable() && noiseSuppressor != null) {
-            LinearLayout noiseSuppressorLayout = new LinearLayout(context);
-            noiseSuppressorLayout.setOrientation(LinearLayout.HORIZONTAL);
-            noiseSuppressorLayout.setPadding(0,0,10,0);
-
-            Switch noiseSuppressorSwitch = new Switch(context);
-            noiseSuppressorSwitch.setOnClickListener(view -> echoCanceler.setEnabled(noiseSuppressorSwitch.isEnabled()));
-            TextView noiseSuppressorTextView = new TextView(context);
-            noiseSuppressorTextView.setText(getResources().getString(R.string.noise_suppressor));
-            noiseSuppressorLayout.addView(noiseSuppressorTextView);
-            noiseSuppressorLayout.addView(noiseSuppressorSwitch);
-            slidersContainer.addView(noiseSuppressorLayout);
-        }
     }
 
     SeekBar.OnSeekBarChangeListener seekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-            short band = Short.parseShort(seekBar.getTag().toString());
-            equalizer.setBandLevel(band, (short) (i + equalizer.getBandLevelRange()[0]));
+
         }
 
         @Override
@@ -190,15 +183,16 @@ public class EqualizerFragment extends Fragment {
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-
+            short band = Short.parseShort(seekBar.getTag().toString());
+            short value = (short) (seekBar.getProgress() + equalizer.getBandLevelRange()[0]);
+            equalizer.setBandLevel(band, value);
+            presetsSpinner.setSelection(0);
         }
     };
 
     SeekBar.OnSeekBarChangeListener bassBoostChangeListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-            bassBoost.setStrength((short) i);
-            Player.getInstance().setCurrentBassBoostStrength((short)i);
         }
 
         @Override
@@ -208,7 +202,11 @@ public class EqualizerFragment extends Fragment {
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-
+            if(bassBoost.getStrengthSupported()) {
+                bassBoost.setStrength((short) seekBar.getProgress());
+            }else{
+                Toast.makeText(context, getResources().getString(R.string.bass_boost_not_supported_message), Toast.LENGTH_SHORT).show();
+            }
         }
     };
 
@@ -218,11 +216,11 @@ public class EqualizerFragment extends Fragment {
             if(i > 0){
                 short preset = (short)(i - 1);
                 equalizer.usePreset(preset);
-                Player.getInstance().setCurrentPreset(preset);
-                for(int j = 0; j < equalizer.getNumberOfBands(); j ++){
+                for(short j = 0; j < equalizer.getNumberOfBands(); j ++) {
                     SeekBar bar = slidersContainer.findViewWithTag(j);
-                    bar.setProgress(equalizer.getBandLevel((short) (j)) - equalizer.getBandLevelRange()[0]);
+                    bar.setProgress(equalizer.getBandLevel(j) - equalizer.getBandLevelRange()[0]);
                 }
+                presetsSpinner.setSelection(i);
             }
         }
 

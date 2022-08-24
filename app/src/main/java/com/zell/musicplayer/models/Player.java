@@ -6,16 +6,13 @@ import android.media.audiofx.BassBoost;
 import android.media.audiofx.Equalizer;
 import android.media.audiofx.NoiseSuppressor;
 
+
 public class Player {
 
     private static Player INSTANCE;
     private MediaPlayer player;
     private Equalizer equalizer;
-    private short currentPreset = 0;
     private BassBoost bassBoost;
-    private short currentBassBoostStrength = 0;
-    private AcousticEchoCanceler echoCanceler;
-    private NoiseSuppressor noiseSuppressor;
 
     private Player(){
         player = new MediaPlayer();
@@ -24,8 +21,6 @@ public class Player {
         bassBoost = new BassBoost(0, playerSession);
         equalizer.setEnabled(true);
         bassBoost.setEnabled(true);
-        echoCanceler = AcousticEchoCanceler.create(playerSession);
-        noiseSuppressor = NoiseSuppressor.create(playerSession);
     }
 
     public void destroy(){
@@ -39,8 +34,7 @@ public class Player {
 
     public synchronized static Player getInstance(){
         if(INSTANCE == null){
-            INSTANCE = new Player();
-        }
+            INSTANCE = new Player();        }
         return INSTANCE;
     }
 
@@ -56,27 +50,4 @@ public class Player {
         return bassBoost;
     }
 
-    public short getCurrentPreset(){
-        return currentPreset;
-    }
-
-    public void setCurrentPreset(short preset){
-        currentPreset = preset;
-    }
-
-    public short getCurrentBassBoostStrength() {
-        return currentBassBoostStrength;
-    }
-
-    public void setCurrentBassBoostStrength(short currentBassBoostStrength) {
-        this.currentBassBoostStrength = currentBassBoostStrength;
-    }
-
-    public AcousticEchoCanceler getEchoCanceler() {
-        return echoCanceler;
-    }
-
-    public NoiseSuppressor getNoiseSuppressor() {
-        return noiseSuppressor;
-    }
 }

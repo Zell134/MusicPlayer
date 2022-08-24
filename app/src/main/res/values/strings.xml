@@ -12,6 +12,7 @@
     <string name="noise_suppressor">Подавитель шума</string>
     <string name="bass_bost">Bass Boost</string>
     <string name="equalizer_string">Эквалайзер</string>
+    <string name="bass_boost_not_supported_message">Bass Boost не поддерживается Вашим устройством</string>
 
     <!--    Player-->
     <string name="playing">Проигрывается</string>

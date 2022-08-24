@@ -1,10 +1,17 @@
 package com.zell.musicplayer.Services;
 
+import static com.zell.musicplayer.db.PropertiesList.BASS_BOOST;
+import static com.zell.musicplayer.db.PropertiesList.CURRENT_PRESET;
 import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
+import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
+import static com.zell.musicplayer.db.PropertiesList.ECHO_CANCELER;
+import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
+import static com.zell.musicplayer.db.PropertiesList.NOIZE_SUPPRESSOR;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Handler;
 
 import com.zell.musicplayer.db.DatabaseHelper;
 import com.zell.musicplayer.db.LibraryType;
@@ -59,16 +66,48 @@ public class PropertiesService {
         db.close();
     }
 
+    public static String getBassBoostValue(Context context) {
+        return getValue(context, BASS_BOOST);
+    }
+
+    public static void setBassBoostValue(Context context, String value) {
+        setValue(context, BASS_BOOST, value);
+    }
+
     public static String getCurrentSong(Context context) {
+        return getValue(context, CURRENT_SONG);
+    }
+
+    public static void setCurrentSong(Context context, String songPath) {
+        setValue(context, CURRENT_SONG, songPath);
+    }
+
+    public static String getCurrentPreset(Context context) {
+        return getValue(context, CURRENT_PRESET);
+    }
+
+    public static void setCurrentPreset(Context context, String preset) {
+        setValue(context, CURRENT_PRESET, preset);
+    }
+
+    public static String getEqualizerBand(Context context, short band) {
+        return getValue(context, EQUALIZER + DELIMITER + String.valueOf(band));
+    }
+
+    public static void setEqualizerBand(Context context, short band, String value) {
+        setValue(context, EQUALIZER + DELIMITER + String.valueOf(band), value);
+    }
+
+    private static String getValue(Context context, String key){
         SQLiteDatabase db = new DatabaseHelper(context).getReadableDatabase();
-        String result = DatabaseHelper.getProperty(db, CURRENT_SONG);
+        String result = DatabaseHelper.getProperty(db, key);
         db.close();
         return result;
     }
 
-    public static void setCurrentSong(Context context, String songPath) {
+    public static void setValue(Context context, String key, String value) {
         SQLiteDatabase db = new DatabaseHelper(context).getWritableDatabase();
-        DatabaseHelper.updateProperty(db, CURRENT_SONG, songPath);
+        DatabaseHelper.updateProperty(db, key, value);
         db.close();
     }
 }
