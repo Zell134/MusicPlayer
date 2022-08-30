@@ -143,11 +143,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
 
-        stopButton.setOnClickListener(view -> {
-            if (currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
-                mediaController.getTransportControls().stop();
-            }
-        });
+        stopButton.setOnClickListener(view -> stopPlaying());
 
         previousButton.setOnClickListener(view -> mediaController.getTransportControls().skipToPrevious());
 
@@ -272,6 +268,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    public void stopPlaying(){
+        if (currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
+            mediaController.getTransportControls().stop();
+        }
+        resetStateOnStop();
+    }
+
+    private void resetStateOnStop(){
+        songName.setText("");
+        songInfo.setText("");
+        albumArt.setImageResource(R.drawable.empty_album_art);
+        timer.setText("0/0");
+    }
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

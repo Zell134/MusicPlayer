@@ -75,6 +75,7 @@ public class PlaylistService implements SongAdapter.Listener{
         this.libraryType = libraryType;
         setPlaylist(getPlaylistBySongPathAndLibraryType(null));
         adapter.setPlaylist(playlist.getPlaylist());
+        ((MainActivity)context).stopPlaying();
     }
 
     @SuppressLint("NewApi")
