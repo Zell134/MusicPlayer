@@ -1,6 +1,7 @@
 package com.zell.musicplayer.models;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class Folder implements Item{
 
@@ -8,10 +9,10 @@ public class Folder implements Item{
     protected String title;
     protected boolean isAudioFile;
 
-    public Folder(String path, String title, boolean isAudioFile) {
+    public Folder(String path, String title) {
         this.path = path;
         this.title = title;
-        this.isAudioFile = isAudioFile;
+        this.isAudioFile = false;
     }
 
     public Folder() {
@@ -37,5 +38,16 @@ public class Folder implements Item{
     @Override
     public boolean isAudioFile() {
         return isAudioFile;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        Folder folder;
+        try {
+            folder = (Folder) obj;
+        }catch (Exception e){
+            return false;
+        }
+        return title.equals(folder.getTitle()) && path.equals(folder.getPath());
     }
 }

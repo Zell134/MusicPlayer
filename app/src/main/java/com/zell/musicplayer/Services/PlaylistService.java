@@ -62,8 +62,13 @@ public class PlaylistService implements SongAdapter.Listener{
 
     private void setPlaylist(List<Item> playlist){
         this.playlist.setPlaylist(playlist);
-        this.playlist.setPreviousSongPosition(0);
-        this.playlist.setCurrentSongPosition(0);
+        if(this.playlist.getItemAtPosition(0).getTitle().equals(context.getResources().getString(R.string.previous_directory))&&
+                playlist.size() > 1)
+        {
+            this.playlist.setCurrentSongPosition(1);
+        }else {
+            this.playlist.setCurrentSongPosition(0);
+        }
     }
 
     public void setLibraryType(LibraryType libraryType) {
@@ -100,6 +105,22 @@ public class PlaylistService implements SongAdapter.Listener{
         return playlist;
     }
 
+    private List<Item> getPlayListByFolderPath(String folderPath){
+        List<Item> playlist = new ArrayList<>();
+        if(folderPath!=null && new File(folderPath).exists()) {
+            switch (libraryType) {
+                case LIBRARY_TYPE_EXTERNAL_STORAGE:
+                    playlist = MediaLibraryService.getFilesList(context, new File(folderPath));
+                    break;
+//                case LIBRARY_TYPE_ARTISTS:
+//                    Song song = MediaLibraryService.getSongByPath(context, songPath);
+//                    playlist = MediaLibraryService.getSongsOfAlbum(context, song.getAlbum(), song.getArtist());
+//                    break;
+            }
+        }
+        return playlist;
+    }
+
     private int getItemIndexFromPlaylist(List <Item> playlist, String songPath){
         for (int i = 0; i <playlist.size(); i++){
             if(playlist.get(i).getPath().equals(songPath)){
@@ -132,6 +153,7 @@ public class PlaylistService implements SongAdapter.Listener{
         } else {
             playlist.setCurrentSongPosition(position);
             onItemSelect();
+            adapter.setPlaylist(playlist.getPlaylist());
         }
     }
 
@@ -142,7 +164,7 @@ public class PlaylistService implements SongAdapter.Listener{
             case LIBRARY_TYPE_EXTERNAL_STORAGE: {
                 if (item.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
                     String filePath = item.getPath();
-                    playlist = MediaLibraryService.getFilesList(context, new File(filePath.substring(0, filePath.lastIndexOf("/"))));
+                    playlist = MediaLibraryService.getFilesList(context, new File(getSongFolder(filePath)));
                 } else {
                     playlist = MediaLibraryService.getFilesList(context, new File(item.getPath()));
                 }
@@ -166,22 +188,11 @@ public class PlaylistService implements SongAdapter.Listener{
             }
         }
         setPlaylist(playlist);
-        adapter.setPlaylist(playlist);
     }
 
     public void onBackPressed() {
-        if (libraryType != LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY) {
-            if (playlist.getItemAtPosition(0).getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
-                playlist.setCurrentSongPosition(0);
-                onItemSelect();
-            }
-        }
-    }
-
-    public void playNextSong() {
-        int oldPosition = playlist.getCurrentSongPosition();
-        int newPosition = playlist.getNextSongPosition();
-        setNewPositionAndPlay(oldPosition, newPosition);
+        getPreviousDirectory();
+        adapter.setPlaylist(playlist.getPlaylist());
     }
 
     public void playPreviousSong() {
@@ -199,7 +210,6 @@ public class PlaylistService implements SongAdapter.Listener{
         play();
     }
 
-
     public void scrollToPosition(int position) {
         if(listView != null) {
             LinearLayoutManager layoutManager = (LinearLayoutManager) listView.getLayoutManager();
@@ -209,5 +219,120 @@ public class PlaylistService implements SongAdapter.Listener{
 
     public void scrollToCurrentPosition(){
         scrollToPosition(playlist.getCurrentSongPosition());
+    }
+
+    public void playNextSong() {
+        int oldPosition = playlist.getCurrentSongPosition();
+        if (oldPosition < playlist.getPlaylistSize() - 1) {
+            int newPosition = oldPosition + 1;
+            Item currentItem = playlist.getItemAtPosition(newPosition);
+            if (currentItem.isAudioFile()) {
+                setAdapterAndPlay(oldPosition, newPosition);
+                return;
+            }else {
+                goInToFolder(currentItem.getPath());
+                if (playlist.getCurrentItem().isAudioFile()) {
+                    int currentPosition = playlist.getCurrentSongPosition();
+                    setAdapterAndPlay(currentPosition, currentPosition);
+                } else {
+                    playNextSong();
+                }
+            }
+        }else {
+            if (getPreviousDirectory()) {
+                int position = playlist.getCurrentSongPosition();
+                if(position < playlist.getPlaylistSize() - 1){
+                    position ++;
+                }
+                Item currentItem = playlist.getItemAtPosition(position);
+                if(currentItem.isAudioFile()){
+                    setAdapterAndPlay(position, position);
+                }else {
+                    getNextFolder();
+                    if (playlist.getPlaylistSize() == 1) {
+                        getPreviousDirectory();
+                        playNextSong();
+                    } else if (playlist.getCurrentItem().isAudioFile()) {
+                        int currentPosition = playlist.getCurrentSongPosition();
+                        setAdapterAndPlay(currentPosition, currentPosition);
+                    } else {
+                        getNextFolder();
+                        if(playlist.getCurrentItem().isAudioFile()){
+                            position = playlist.getCurrentSongPosition();
+                            setAdapterAndPlay(position, position);
+                        }else {
+                            playNextSong();
+                        }
+                    }
+                }
+            }else{
+                playlist.setPlaylist(adapter.getPlaylist());
+            }
+        }
+    }
+
+    private void setAdapterAndPlay(int oldPosition, int newPosition){
+        adapter = new SongAdapter(this, playlist.getPlaylist());
+        setAdapter();
+        setNewPositionAndPlay(oldPosition, newPosition);
+    }
+
+    private String getSongFolder(String filePath){
+        return filePath.substring(0, filePath.lastIndexOf("/"));
+    }
+
+    public boolean getPreviousDirectory(){
+        if (libraryType != LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY) {
+            Item currentItem = playlist.getCurrentItem();
+            String folderPath = playlist.getItemAtPosition(0).getPath();
+
+            File folder = new File(folderPath);
+            if(folder.exists() && folder.canRead()) {
+                playlist.setCurrentSongPosition(0);
+                if(playlist.getCurrentItem().getTitle().equals(context.getResources().getString(R.string.previous_directory)))
+                {
+                    onItemSelect();
+                    if(!playlist.getItemAtPosition(0).getTitle().equals(context.getResources().getString(R.string.previous_directory))){
+                        return false;
+                    }
+                    if(playlist.getPlaylistSize() == 1){
+                        getPreviousDirectory();
+                    }
+                    if(currentItem.getTitle().equals(context.getResources().getString(R.string.previous_directory))){
+                        playlist.setCurrentSongPosition(playlist.findSongIndexByPath(currentItem.getPath()));
+                    }else {
+                        playlist.setCurrentSongPosition(playlist.findSongIndexByPath(getSongFolder(currentItem.getPath())));
+                    }
+                }else {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void getNextFolder(){
+        int position = playlist.getCurrentSongPosition();
+        if(position < playlist.getPlaylistSize() - 1) {
+            position++;
+            int playlistSize = playlist.getPlaylistSize();
+            if (position < playlistSize) {
+                goInToFolder(playlist.getItemAtPosition(position).getPath());
+            }
+        }else{
+            getPreviousDirectory();
+        }
+    }
+
+    private void goInToFolder(String path){
+        List<Item> list = getPlayListByFolderPath(path);
+        setPlaylist(list);
+        if(playlist.getPlaylistSize() == 1){
+            return;
+        }
+        Item curentItem = playlist.getCurrentItem();
+        if(!curentItem.isAudioFile()){
+            goInToFolder(curentItem.getPath());
+        }
     }
 }

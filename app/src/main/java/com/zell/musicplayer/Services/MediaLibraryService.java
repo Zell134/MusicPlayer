@@ -51,10 +51,10 @@ public class MediaLibraryService {
         List<Item> playlist = new ArrayList<>();
         File previousFile = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf("/")));
         if(previousFile.exists() && previousFile.canRead()) {
-            playlist.add(new Folder(file.getAbsolutePath(), context.getResources().getString(R.string.previous_directory),  false));
+            playlist.add(new Folder(file.getAbsolutePath(), context.getResources().getString(R.string.previous_directory)));
         }
         Stream.of(file.listFiles(f -> f.isDirectory() && f.canRead()))
-                .forEach(f->playlist.add(new Folder(f.getAbsolutePath(), f.getName(),false)));
+                .forEach(f->playlist.add(new Folder(f.getAbsolutePath(), f.getName())));
         getMediaFiles(playlist, file.getPath(),context);
         return playlist;
     }
@@ -86,7 +86,7 @@ public class MediaLibraryService {
     private static void getSongsList(List<Item> playlist, Context context, String album, String artist) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        playlist.add(new Folder(artist, context.getResources().getString(R.string.previous_directory),  false));
+        playlist.add(new Folder(artist, context.getResources().getString(R.string.previous_directory)));
         String selection = MediaStore.Audio.Media.ALBUM + " LIKE ? AND " + MediaStore.Audio.Media.ARTIST + " LIKE ? ";
         String[] selectionArgs = new String[]{
                 album,
@@ -105,7 +105,7 @@ public class MediaLibraryService {
     private static void getAlbumList(List<Item> playlist, Context context, String artist) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        playlist.add(new Folder("root", context.getResources().getString(R.string.previous_directory),  false));
+        playlist.add(new Folder("root", context.getResources().getString(R.string.previous_directory)));
         String selection = MediaStore.Audio.Media.ARTIST + " LIKE ? ";
         String[] selectionArgs = new String[]{artist};
         cursor = contentResolver.query(uri, new String[] {MediaStore.Audio.Media.ALBUM}, selection, selectionArgs, null);
@@ -117,7 +117,7 @@ public class MediaLibraryService {
             }
             cursor.close();
         }
-        set.forEach(e -> playlist.add(new Folder(artist, e, false)));
+        set.forEach(e -> playlist.add(new Folder(artist, e)));
     }
 
     private static void getMediaFiles(List<Item> playlist, String filePath, Context context){
@@ -163,7 +163,7 @@ public class MediaLibraryService {
             }
             cursor.close();
         }
-        set.forEach(e -> playlist.add(new Folder("root", e, false)));
+        set.forEach(e -> playlist.add(new Folder("root", e)));
     }
 
 

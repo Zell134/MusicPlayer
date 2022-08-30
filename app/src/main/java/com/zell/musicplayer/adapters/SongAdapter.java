@@ -55,6 +55,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
         notifyItemChanged(newPosition);
     }
 
+    public List<Item> getPlaylist(){
+        return playlist;
+    }
+
     @NonNull
     @Override
     public PlaylistViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

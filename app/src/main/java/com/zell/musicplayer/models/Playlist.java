@@ -6,7 +6,6 @@ public class Playlist {
 
     private List<Item> playlist;
     private int currentSongPosition;
-    private int previousSongPosition;
 
     public List<Item> getPlaylist() {
         return playlist;
@@ -40,8 +39,8 @@ public class Playlist {
         return playlist.get(position);
     }
 
-    public void setPreviousSongPosition(int previousSong) {
-        this.previousSongPosition = previousSong;
+    public int getPlaylistSize(){
+        return playlist.size();
     }
 
     public int getPreviousSongPosition(){
@@ -69,19 +68,11 @@ public class Playlist {
     public int getNextSongPosition(){
         int current = currentSongPosition;
         if(playlist != null) {
-            int i = 0;
-            while (true) {
+            while (current < playlist.size() - 1) {
                 current++;
-                if (current > playlist.size() - 1) {
-                    current = 0;
-                }
                 Item item = playlist.get(current);
                 if (item.isAudioFile()) {
                     return current;
-                }
-                i++;
-                if (i >= playlist.size()) {
-                    break;
                 }
             }
         }
