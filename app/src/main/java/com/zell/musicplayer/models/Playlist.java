@@ -79,9 +79,18 @@ public class Playlist {
         return -1;
     }
 
-    public int findSongIndexByPath(String songPath){
+    public int findItemIndexByPath(String songPath){
         for(int i = 0; i<playlist.size(); i++){
             if(playlist.get(i).getPath().equals(songPath)){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int findItemIndexByTitle(String title){
+        for(int i = 0; i<playlist.size(); i++){
+            if(playlist.get(i).getTitle().equals(title)){
                 return i;
             }
         }

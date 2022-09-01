@@ -106,17 +106,11 @@ public class PlaylistService implements SongAdapter.Listener{
         return playlist;
     }
 
-    private List<Item> getPlayListByFolderPath(String folderPath){
+    private List<Item> getPlayListByFolderPath(String path){
         List<Item> playlist = new ArrayList<>();
-        if(folderPath!=null && new File(folderPath).exists()) {
-            switch (libraryType) {
-                case LIBRARY_TYPE_EXTERNAL_STORAGE:
-                    playlist = MediaLibraryService.getFilesList(context, new File(folderPath));
-                    break;
-//                case LIBRARY_TYPE_ARTISTS:
-//                    Song song = MediaLibraryService.getSongByPath(context, songPath);
-//                    playlist = MediaLibraryService.getSongsOfAlbum(context, song.getAlbum(), song.getArtist());
-//                    break;
+        if(path!=null && new File(path).exists()) {
+            if (libraryType == LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE){
+                playlist = MediaLibraryService.getFilesList(context, new File(path));
             }
         }
         return playlist;
@@ -203,7 +197,7 @@ public class PlaylistService implements SongAdapter.Listener{
     }
 
     private void setNewPositionAndPlay(int oldPosition, int newPosition){
-        if (newPosition > 0) {
+        if (newPosition >= 0) {
             playlist.setCurrentSongPosition(newPosition);
             adapter.setSelectedPosition(oldPosition, newPosition);
             scrollToPosition(newPosition);
@@ -223,6 +217,62 @@ public class PlaylistService implements SongAdapter.Listener{
     }
 
     public void playNextSong() {
+        switch (libraryType){
+            case LIBRARY_TYPE_EXTERNAL_STORAGE: {
+                playNextSongOnExternalStorageLibrary();
+                break;
+            }
+            case LIBRARY_TYPE_ARTISTS: {
+                playNextSongOnArtistTypeLibrary();
+                break;
+            }
+            default: {
+                int oldPosition = playlist.getCurrentSongPosition();
+                int newPosition;
+                if (oldPosition < playlist.getPlaylistSize() - 1) {
+                    newPosition = oldPosition + 1;
+                }else{
+                    newPosition = 0;
+                }
+                setNewPositionAndPlay(oldPosition, newPosition);
+            }
+        }
+    }
+
+    private void playNextSongOnArtistTypeLibrary(){
+        int oldPosition = playlist.getCurrentSongPosition();
+        if (oldPosition < playlist.getPlaylistSize() - 1) {
+            int newPosition = oldPosition + 1;
+            setNewPositionAndPlay(oldPosition, newPosition);
+        }else {
+            getPreviousDirectory();
+            if (playlist.getPlaylistSize() <= 2 || playlist.getCurrentSongPosition() == playlist.getPlaylistSize() - 1) {
+                getPreviousDirectory();
+            }
+            if(playlist.getCurrentSongPosition() == playlist.getPlaylistSize() - 1){
+                playlist.setCurrentSongPosition(0);
+                onItemSelect();
+                onItemSelect();
+                int position = playlist.getCurrentSongPosition();
+                setAdapterAndPlay(position, position);
+            }else {
+                int position = playlist.getCurrentSongPosition();
+                position++;
+                if (position < playlist.getPlaylistSize()) {
+                    playlist.setCurrentSongPosition(position);
+                    onItemSelect();
+                    Item currentItem = playlist.getCurrentItem();
+                    if (!currentItem.isAudioFile()) {
+                        onItemSelect();
+                    }
+                    position = playlist.getCurrentSongPosition();
+                    setAdapterAndPlay(position, position);
+                }
+            }
+        }
+    }
+
+    private void playNextSongOnExternalStorageLibrary(){
         int oldPosition = playlist.getCurrentSongPosition();
         if (oldPosition < playlist.getPlaylistSize() - 1) {
             int newPosition = oldPosition + 1;
@@ -283,8 +333,9 @@ public class PlaylistService implements SongAdapter.Listener{
     }
 
     public boolean getPreviousDirectory(){
-        if (libraryType != LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY) {
-            Item currentItem = playlist.getCurrentItem();
+        Item currentItem = playlist.getCurrentItem();
+
+        if (libraryType == LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE) {
             String folderPath = playlist.getItemAtPosition(0).getPath();
 
             File folder = new File(folderPath);
@@ -300,12 +351,23 @@ public class PlaylistService implements SongAdapter.Listener{
                         getPreviousDirectory();
                     }
                     if(currentItem.getTitle().equals(context.getResources().getString(R.string.previous_directory))){
-                        playlist.setCurrentSongPosition(playlist.findSongIndexByPath(currentItem.getPath()));
+                        playlist.setCurrentSongPosition(playlist.findItemIndexByPath(currentItem.getPath()));
                     }else {
-                        playlist.setCurrentSongPosition(playlist.findSongIndexByPath(getSongFolder(currentItem.getPath())));
+                        playlist.setCurrentSongPosition(playlist.findItemIndexByPath(getSongFolder(currentItem.getPath())));
                     }
                 }else {
                     return false;
+                }
+            }
+        }else if(libraryType == LibraryType.LIBRARY_TYPE_ARTISTS){
+            Item rootFolder = playlist.getItemAtPosition(0);
+            if(rootFolder.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
+                playlist.setCurrentSongPosition(0);
+                onItemSelect();
+                if(currentItem.isAudioFile()) {
+                    playlist.setCurrentSongPosition(playlist.findItemIndexByTitle(((Song) currentItem).getAlbum()));
+                }else{
+                    playlist.setCurrentSongPosition(playlist.findItemIndexByTitle(currentItem.getPath()));
                 }
             }
         }
@@ -326,14 +388,16 @@ public class PlaylistService implements SongAdapter.Listener{
     }
 
     private void goInToFolder(String path){
-        List<Item> list = getPlayListByFolderPath(path);
-        setPlaylist(list);
-        if(playlist.getPlaylistSize() == 1){
-            return;
-        }
-        Item curentItem = playlist.getCurrentItem();
-        if(!curentItem.isAudioFile()){
-            goInToFolder(curentItem.getPath());
+        if (libraryType == LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE) {
+            List<Item> list = getPlayListByFolderPath(path);
+            setPlaylist(list);
+            if (playlist.getPlaylistSize() == 1) {
+                return;
+            }
+            Item curentItem = playlist.getCurrentItem();
+            if (!curentItem.isAudioFile()) {
+                goInToFolder(curentItem.getPath());
+            }
         }
     }
 }
