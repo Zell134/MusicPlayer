@@ -10,9 +10,11 @@ import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
 import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
 import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
+import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
 
 import android.content.ComponentName;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
 import android.media.audiofx.BassBoost;
 import android.media.audiofx.Equalizer;
 import android.net.Uri;
@@ -170,10 +172,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         } );
 
-        if(properties.contains(BASS_BOOST)) {
+        if(properties.containsKey(BASS_BOOST)) {
             if (bassBoost.getStrengthSupported()) {
                 bassBoost.setStrength(Short.parseShort(properties.getProperty(BASS_BOOST)));
             }
+        }
+        if(properties.containsKey(VOLUME_LEVEL)) {
+            int volumeLevel = Integer.parseInt(properties.getProperty(VOLUME_LEVEL));
+            AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC,volumeLevel,0);
         }
     }
 
@@ -214,6 +221,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             mediaBrowser.disconnect();
         }
         NotificationManagerCompat.from(this).cancel(NotificationService.ID);
+
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        int volumeLevel= am.getStreamVolume(AudioManager.STREAM_MUSIC);
+        PropertiesService.setVolume(this, String.valueOf(volumeLevel));
         super.onDestroy();
     }
 

@@ -416,8 +416,4 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     public void onCompletion(MediaPlayer mediaPlayer) {
         skipToNext();
     }
-
-    public int getAudioSession(){
-        return player.getAudioSessionId();
-    }
 }

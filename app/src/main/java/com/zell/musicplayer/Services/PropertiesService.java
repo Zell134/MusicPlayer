@@ -8,6 +8,7 @@ import static com.zell.musicplayer.db.PropertiesList.ECHO_CANCELER;
 import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
 import static com.zell.musicplayer.db.PropertiesList.NOIZE_SUPPRESSOR;
+import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -72,6 +73,14 @@ public class PropertiesService {
 
     public static void setBassBoostValue(Context context, String value) {
         setValue(context, BASS_BOOST, value);
+    }
+
+    public static String getVolume(Context context) {
+        return getValue(context, VOLUME_LEVEL);
+    }
+
+    public static void setVolume(Context context, String value) {
+        setValue(context, VOLUME_LEVEL, value);
     }
 
     public static String getCurrentSong(Context context) {
