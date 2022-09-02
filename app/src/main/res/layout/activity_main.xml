@@ -38,19 +38,6 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <androidx.fragment.app.FragmentContainerView
-                android:id="@+id/main_fragment"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
-
-            <LinearLayout
-                android:layout_height="match_parent"
-                android:layout_width="1dp"
-                android:orientation="vertical"
-                android:background="@color/selected_item"/>
-
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -59,6 +46,19 @@
                 <include layout="@layout/fragment_controls" />
 
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_height="match_parent"
+                android:layout_width="1dp"
+                android:orientation="vertical"
+                android:background="@color/selected_item"/>
+
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/main_fragment"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"/>
 
         </LinearLayout>
 

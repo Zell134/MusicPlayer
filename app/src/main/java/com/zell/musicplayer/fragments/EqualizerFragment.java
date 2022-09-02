@@ -1,10 +1,8 @@
 package com.zell.musicplayer.fragments;
 
 import android.content.Context;
-import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.BassBoost;
 import android.media.audiofx.Equalizer;
-import android.media.audiofx.NoiseSuppressor;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -20,12 +18,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.Services.PropertiesService;
-import com.zell.musicplayer.activities.MainActivity;
 import com.zell.musicplayer.models.Player;
 
 import java.util.ArrayList;
