@@ -1,36 +1,24 @@
 package com.zell.musicplayer.adapters;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.MediaLibraryService;
-import com.zell.musicplayer.db.LibraryType;
 import com.zell.musicplayer.models.Item;
-import com.zell.musicplayer.models.Playlist;
 import com.zell.musicplayer.models.Song;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHolder> {
 
-    private SongAdapter.Listener listener;
+    private final SongAdapter.Listener listener;
     private List<Item> playlist;
 
     public interface Listener {
@@ -92,7 +80,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
             if(position == 0){
                 songView.setText(song.getTitle());
             }else {
-                songView.setText(String.valueOf(position) + ". " + song.getTitle());
+                songView.setText(position + ". " + song.getTitle());
             }
             if (song.isAudioFile()) {
                 artistView.setText(((Song) song).getArtist());

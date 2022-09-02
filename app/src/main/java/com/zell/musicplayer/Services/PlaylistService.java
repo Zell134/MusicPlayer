@@ -44,7 +44,7 @@ public class PlaylistService implements SongAdapter.Listener{
 
         if(position >= 0) {
             currentSongPosition = position;
-            scrollToPosition(position - 2);
+            scrollToPosition(position);
             if(isFirstStart) {
                 play();
                 isFirstStart = false;
@@ -260,7 +260,23 @@ public class PlaylistService implements SongAdapter.Listener{
     public void scrollToPosition(int position) {
         if(listView != null) {
             LinearLayoutManager layoutManager = (LinearLayoutManager) listView.getLayoutManager();
-            layoutManager.scrollToPosition(position);
+            int firstVisibleView = layoutManager.findFirstVisibleItemPosition();
+            int lastVisibleView = layoutManager.findLastVisibleItemPosition();
+            int centerVisibleList =  (lastVisibleView - firstVisibleView) / 2;
+            int playlistSize = playlist.size();
+            if(position >= playlistSize - centerVisibleList){
+                layoutManager.scrollToPosition(playlistSize);
+                return;
+            }
+            if(position <= centerVisibleList){
+                layoutManager.scrollToPosition(0);
+                return;
+            }
+            if(position < firstVisibleView) {
+                layoutManager.scrollToPosition(position - centerVisibleList);
+            }else{
+                layoutManager.scrollToPosition(position + centerVisibleList);
+            }
         }
     }
 

@@ -6,7 +6,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Environment;
 import android.provider.MediaStore;
 
 import com.zell.musicplayer.R;
@@ -26,7 +25,7 @@ public class MediaLibraryService {
 
     private static Cursor cursor;
     private static ContentResolver contentResolver;
-    private static String[] projection = new String[] {
+    private static final String[] projection = new String[] {
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ALBUM,

@@ -4,15 +4,12 @@ import static com.zell.musicplayer.db.PropertiesList.BASS_BOOST;
 import static com.zell.musicplayer.db.PropertiesList.CURRENT_PRESET;
 import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
 import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
-import static com.zell.musicplayer.db.PropertiesList.ECHO_CANCELER;
 import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
-import static com.zell.musicplayer.db.PropertiesList.NOIZE_SUPPRESSOR;
 import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Handler;
 
 import com.zell.musicplayer.db.DatabaseHelper;
 import com.zell.musicplayer.db.LibraryType;

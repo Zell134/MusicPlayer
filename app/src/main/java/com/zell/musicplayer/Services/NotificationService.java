@@ -5,7 +5,6 @@ import static android.content.Context.NOTIFICATION_SERVICE;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -20,7 +19,7 @@ public class NotificationService {
     private final String NOTIFY_ID="com.zell.musicplayer.Services";
     public static final int ID = 1;
 
-    private NotificationCompat.Builder builder;
+    private final NotificationCompat.Builder builder;
 
     public NotificationService (
             MusicPlayerService context, MediaSessionCompat mediaSession) {
