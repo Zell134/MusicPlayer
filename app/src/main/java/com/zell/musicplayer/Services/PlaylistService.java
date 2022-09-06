@@ -22,7 +22,7 @@ import java.util.List;
 public class PlaylistService implements SongAdapter.Listener{
 
     private RecyclerView listView;
-    private final Context context;
+    private Context context;
     private SongAdapter adapter;
     private LibraryType libraryType;
     private boolean isFirstStart = true;
@@ -33,6 +33,10 @@ public class PlaylistService implements SongAdapter.Listener{
         this.context = context;
         this.libraryType = libraryType;
         setup(songPath);
+    }
+
+    public void setContext(Context context){
+        this.context = context;
     }
 
     private void setup(String songPath){

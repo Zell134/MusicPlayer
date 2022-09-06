@@ -12,7 +12,6 @@ import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
 import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
 
-import android.content.ComponentName;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.audiofx.BassBoost;
@@ -20,8 +19,6 @@ import android.media.audiofx.Equalizer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.RemoteException;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -41,10 +38,10 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.MusicPlayerService;
 import com.zell.musicplayer.Services.NotificationService;
 import com.zell.musicplayer.Services.PermissionsService;
 import com.zell.musicplayer.Services.PlaylistService;
@@ -55,6 +52,8 @@ import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.fragments.PlaylistFragment;
 import com.zell.musicplayer.models.Player;
 import com.zell.musicplayer.models.Song;
+import com.zell.musicplayer.viewModels.MediaBrowserViewModel;
+import com.zell.musicplayer.viewModels.PlaylistViewModel;
 
 import java.text.SimpleDateFormat;
 import java.util.Properties;
@@ -75,11 +74,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private TextView songInfo;
     private ImageView albumArt;
     private int currentState;
-    private MediaBrowserCompat mediaBrowser;
     private final SimpleDateFormat formatter = new SimpleDateFormat("mm:ss");
     private Properties properties;
     private PlaylistService playlistService;
     private boolean ifEqualizerOpened = false;
+    private MediaBrowserViewModel mediaBrowserViewModel;
+    private PlaylistViewModel playlistViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,11 +92,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             setFragment(new PermissionFragment());
         }
+        playlistViewModel = new ViewModelProvider(this).get(PlaylistViewModel.class);
+        playlistService = playlistViewModel.getPlaylistService();
+        if(playlistService != null){
+            playlistService.setContext(this);
+        }
 
-        mediaBrowser = new MediaBrowserCompat(getApplicationContext(),
-                new ComponentName(this, MusicPlayerService.class),
-                connectionCallback,
-                null);
+        mediaBrowserViewModel = new ViewModelProvider(this).get(MediaBrowserViewModel.class);
+
+        mediaBrowserViewModel
+                .getMediaController()
+                .observe(this,mediaControllerCompat -> {
+                    this.mediaController = mediaControllerCompat;
+                    MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
+                    mediaController.registerCallback(controllerCallback);
+                    buildControls();
+                    if(mediaController.getMetadata() != null) {
+                        currentState = mediaController.getPlaybackState().getState();
+                        controllerCallback.onMetadataChanged(mediaController.getMetadata());
+                        controllerCallback.onPlaybackStateChanged(mediaController.getPlaybackState());
+
+                    }else{
+                        setEqualizer();
+                    }
+                });
 
         setToolbar();
     }
@@ -126,7 +145,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         seekbar = findViewById(R.id.seekbar);
         timer = findViewById(R.id.timer);
         ImageView exit = findViewById(R.id.exit);
-        playlistService = new PlaylistService(this, getLibraryTypeFromProps(), properties.getProperty(CURRENT_SONG));
+
+        if(playlistService == null) {
+            playlistService = new PlaylistService(this, getLibraryTypeFromProps(), properties.getProperty(CURRENT_SONG));
+            playlistViewModel.setPlaylistService(playlistService);
+        }
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
         playButton.setOnClickListener(view -> {
@@ -152,6 +175,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         nextButton.setOnClickListener(view -> mediaController.getTransportControls().skipToNext());
 
         exit.setOnClickListener(view -> {
+            NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
             onDestroy();
             System.exit(0);
         });
@@ -188,61 +212,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onStart() {
         super.onStart();
         if (checkPermissions(this)) {
-            mediaBrowserConnection();
-        }
-    }
-
-    private void mediaBrowserConnection(){
-        try {
-            if (!mediaBrowser.isConnected()) {
-                mediaBrowser.connect();
-            }
-        }catch(IllegalStateException e){
-            mediaBrowser.connect();
+            mediaBrowserViewModel.connect();
         }
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        if (mediaController != null) {
-            mediaController.unregisterCallback(controllerCallback);
-        }
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
     protected void onDestroy() {
         if(mediaController != null) {
-            mediaController
-                    .getTransportControls()
-                    .stop();
+            mediaController.unregisterCallback(controllerCallback);
         }
-        if(mediaBrowser.isConnected()) {
-            mediaBrowser.disconnect();
-        }
-        NotificationManagerCompat.from(this).cancel(NotificationService.ID);
 
         AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
         int volumeLevel= am.getStreamVolume(AudioManager.STREAM_MUSIC);
         PropertiesService.setVolume(this, String.valueOf(volumeLevel));
         super.onDestroy();
     }
-
-    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
-        @Override
-        public void onConnected() {
-            try {
-                mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
-                MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
-                mediaController.registerCallback(controllerCallback);
-                buildControls();
-                setEqualizer();
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-    };
-
 
     private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
         @Override
@@ -296,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (PermissionsService.onRequestPermissionsResult(requestCode, permissions, grantResults, this)) {
-            mediaBrowserConnection();
+            mediaBrowserViewModel.connect();
             PermissionsService.closeNotification(this);
             setMainFragment();
         }
@@ -321,6 +310,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 equalizerButtonOnClick();
                 break;
             case(R.id.exit):
+                NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
                 onDestroy();
                 System.exit(0);
                 break;
