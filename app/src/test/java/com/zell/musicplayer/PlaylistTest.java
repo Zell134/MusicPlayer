@@ -2,7 +2,6 @@ package com.zell.musicplayer;
 
 import com.zell.musicplayer.models.Folder;
 import com.zell.musicplayer.models.Item;
-import com.zell.musicplayer.models.Playlist;
 import com.zell.musicplayer.models.Song;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -20,6 +20,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
 
     private final SongAdapter.Listener listener;
     private List<Item> playlist;
+    private int foldersCount;
 
     public interface Listener {
         void itemSelected(int position);
@@ -35,6 +36,12 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
     @SuppressLint("NotifyDataSetChanged")
     public void setPlaylist(List<Item> playlist) {
         this.playlist = playlist;
+        foldersCount = 0;
+        playlist.forEach(item -> {
+            if(!item.isAudioFile()){
+                foldersCount++;
+            }
+        });
         notifyDataSetChanged();
     }
 
@@ -72,20 +79,17 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
             itemView.setOnClickListener(this);
         }
 
-        public void bind(Item song, int position) {
+        public void bind(Item item, int position) {
             ImageView icon = itemView.findViewById(R.id.content_icon);
             TextView songView = itemView.findViewById(R.id.song_title);
             TextView artistView = itemView.findViewById(R.id.song_artist);
 
-            if(position == 0){
-                songView.setText(song.getTitle());
-            }else {
-                songView.setText(position + ". " + song.getTitle());
-            }
-            if (song.isAudioFile()) {
-                artistView.setText(((Song) song).getArtist());
+            if(item.isAudioFile()){
+                songView.setText((position - foldersCount + 1) + ". " + item.getTitle());
+                artistView.setText(((Song) item).getArtist());
                 icon.setImageResource(R.drawable.music_icon);
-            } else {
+            }else {
+                songView.setText(item.getTitle());
                 artistView.setText("");
                 icon.setImageResource(R.drawable.folder_icon);
             }
