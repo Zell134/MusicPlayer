@@ -1,4 +1,4 @@
-package com.zell.musicplayer.Services;
+package com.zell.musicplayer.services;
 
 import static com.zell.musicplayer.db.PropertiesList.BASS_BOOST;
 import static com.zell.musicplayer.db.PropertiesList.CURRENT_PRESET;

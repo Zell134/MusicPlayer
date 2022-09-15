@@ -21,7 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.PropertiesService;
+import com.zell.musicplayer.services.PropertiesService;
 import com.zell.musicplayer.models.Player;
 
 import java.util.ArrayList;

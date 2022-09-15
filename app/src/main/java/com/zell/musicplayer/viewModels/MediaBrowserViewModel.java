@@ -12,8 +12,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 
-import com.zell.musicplayer.Services.MusicPlayerService;
-import com.zell.musicplayer.Services.NotificationService;
+import com.zell.musicplayer.services.MusicPlayerService;
+import com.zell.musicplayer.services.NotificationService;
 
 public class MediaBrowserViewModel extends AndroidViewModel {
 

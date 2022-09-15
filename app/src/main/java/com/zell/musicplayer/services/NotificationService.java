@@ -1,4 +1,4 @@
-package com.zell.musicplayer.Services;
+package com.zell.musicplayer.services;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
 

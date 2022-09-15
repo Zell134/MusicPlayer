@@ -1,7 +1,7 @@
 package com.zell.musicplayer.activities;
 
 
-import static com.zell.musicplayer.Services.PermissionsService.checkPermissions;
+import static com.zell.musicplayer.services.PermissionsService.checkPermissions;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_ARTISTS;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY;
@@ -42,10 +42,11 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.NotificationService;
-import com.zell.musicplayer.Services.PermissionsService;
-import com.zell.musicplayer.Services.PlaylistService;
-import com.zell.musicplayer.Services.PropertiesService;
+import com.zell.musicplayer.services.MediaLibraryService;
+import com.zell.musicplayer.services.NotificationService;
+import com.zell.musicplayer.services.PermissionsService;
+import com.zell.musicplayer.services.PlaylistService;
+import com.zell.musicplayer.services.PropertiesService;
 import com.zell.musicplayer.db.LibraryType;
 import com.zell.musicplayer.fragments.EqualizerFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
@@ -68,11 +69,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private MediaControllerCompat mediaController;
     private final Handler handler = new Handler();
-    private SeekBar seekbar;
-    private TextView timer;
-    private TextView songName;
-    private TextView songInfo;
-    private ImageView albumArt;
     private int currentState;
     private final SimpleDateFormat formatter = new SimpleDateFormat("mm:ss");
     private Properties properties;
@@ -139,15 +135,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ImageButton previousButton = findViewById(R.id.previous);
         ImageButton nextButton = findViewById(R.id.next);
         ImageButton equalizerButton = findViewById(R.id.equqlizer_button);
-        songName = findViewById(R.id.playing_song_name);
-        songInfo = findViewById(R.id.playing_song_info);
-        albumArt = findViewById(R.id.album_art);
-        seekbar = findViewById(R.id.seekbar);
-        timer = findViewById(R.id.timer);
         ImageView exit = findViewById(R.id.exit);
+        SeekBar seekbar = findViewById(R.id.seekbar);
 
         if(playlistService == null) {
-            playlistService = new PlaylistService(this, getLibraryTypeFromProps(), properties.getProperty(CURRENT_SONG));
+            playlistService = new PlaylistService(this,
+                    getLibraryTypeFromProps(),
+                    properties.getProperty(CURRENT_SONG),
+                    new MediaLibraryService()
+            );
             playlistViewModel.setPlaylistService(playlistService);
         }
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
@@ -236,6 +232,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+            TextView timer = findViewById(R.id.timer);
             long duration = mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
             timer.setText(formatter.format(i) + " / " + formatter.format(duration));
         }
@@ -247,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
+            SeekBar seekbar = findViewById(R.id.seekbar);
             if(currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
                 mediaController.getTransportControls().seekTo(seekbar.getProgress());
             }
@@ -261,10 +259,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             bundle.putString(ALBUM, song.getAlbum());
             bundle.putString(ARTIST, song.getArtist());
             bundle.putLong(DURATION, song.getDuration());
-            mediaController
-                    .getTransportControls()
-                    .playFromUri(Uri.parse(song.getPath()), bundle);
-            PropertiesService.setCurrentSong(MainActivity.this, song.getPath());
+            if(mediaController != null) {
+                mediaController
+                        .getTransportControls()
+                        .playFromUri(Uri.parse(song.getPath()), bundle);
+                PropertiesService.setCurrentSong(MainActivity.this, song.getPath());
+            }
         }
     }
 
@@ -276,6 +276,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void resetStateOnStop(){
+        TextView songName = findViewById(R.id.playing_song_name);
+        TextView songInfo = findViewById(R.id.playing_song_info);
+        ImageView albumArt = findViewById(R.id.album_art);
+        TextView timer = findViewById(R.id.timer);
+
         songName.setText("");
         songInfo.setText("");
         albumArt.setImageResource(R.drawable.empty_album_art);
@@ -337,6 +342,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void setCurrentState(){
+        SeekBar seekbar = findViewById(R.id.seekbar);
+        TextView timer = findViewById(R.id.timer);
         MediaMetadataCompat metadata = mediaController.getMetadata();
         long duration;
         long position = mediaController.getPlaybackState().getPosition();
@@ -350,6 +357,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void fillSongInfo() {
+        TextView songName = findViewById(R.id.playing_song_name);
+        TextView songInfo = findViewById(R.id.playing_song_info);
+        ImageView albumArt = findViewById(R.id.album_art);
         MediaMetadataCompat metadata = mediaController.getMetadata();
         long duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
         albumArt.setImageDrawable(new BitmapDrawable(mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)));
@@ -440,6 +450,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         @Override
         public void onMetadataChanged(MediaMetadataCompat metadata) {
             super.onMetadataChanged(metadata);
+            SeekBar seekbar = findViewById(R.id.seekbar);
+            TextView timer = findViewById(R.id.timer);
             seekbar.setMax((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             seekbar.setProgress(0);
             timer.setText("0/0");

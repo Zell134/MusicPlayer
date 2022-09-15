@@ -1,7 +1,7 @@
 package com.zell.musicplayer.viewModels;
 
 import androidx.lifecycle.ViewModel;
-import com.zell.musicplayer.Services.PlaylistService;
+import com.zell.musicplayer.services.PlaylistService;
 
 public class PlaylistViewModel extends ViewModel {
 

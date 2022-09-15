@@ -1,4 +1,4 @@
-package com.zell.musicplayer.Services;
+package com.zell.musicplayer.services;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -58,6 +58,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build();
             audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAcceptsDelayedFocusGain(true)
                     .setOnAudioFocusChangeListener(audioFocusChangeListener)
                     .setAudioAttributes(attributes)
                     .build();
@@ -161,7 +162,9 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     public void play(){
         if (ifAudioFocusGranted()) {
             if(playbackState == PlaybackStateCompat.STATE_PAUSED) {
-                mediaSession.setActive(true);
+                if(!mediaSession.isActive()) {
+                    mediaSession.setActive(true);
+                }
                 setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                 player.start();
                 showPlayingNotification();
@@ -186,8 +189,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                     bundle.getString(MainActivity.TITLE),
                     bundle.getString(MainActivity.ALBUM),
                     bundle.getString(MainActivity.ARTIST),
-                    bundle.getLong(MainActivity.DURATION),
-                    true 
+                    bundle.getLong(MainActivity.DURATION)
             );
             setPlayerDataSource(song);
             mediaSession.setActive(true);
@@ -225,10 +227,17 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         public void onAudioFocusChange(int focusState) {
             switch(focusState){
                 case AudioManager.AUDIOFOCUS_GAIN:
+                    player.setVolume(1.0f, 1.0f);
                     mediaSessionCallback.onPlay();
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                    mediaSessionCallback.onPause();
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS:
                     mediaSessionCallback.onPause();
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    player.setVolume(0.5f, 0.5f);
                     break;
                 default:
                     mediaSessionCallback.onPause();

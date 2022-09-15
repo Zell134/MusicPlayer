@@ -8,12 +8,12 @@ public class Song extends Folder{
     private String artist;
     private long duration;
 
-    public Song(String path, String title, String album, String artist, long duration, boolean isAudioFile) {
+    public Song(String path, String title, String album, String artist, long duration) {
         super(path, title);
         this.album = album;
         this.duration = duration;
         this.artist = artist;
-        this.isAudioFile = isAudioFile;
+        this.isAudioFile = true;
     }
 
     public String getAlbum() {

@@ -1,4 +1,4 @@
-package com.zell.musicplayer.Services;
+package com.zell.musicplayer.services;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -21,7 +21,7 @@ public class PermissionsService {
     private static final int REQUEST_CODE = 1;
     private static final int ID = 100;
     private static final String NOTIFICATION_ID = "Notification";
-    private static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
+    public static final String PERMISSION_STRING = android.Manifest.permission.READ_EXTERNAL_STORAGE;
 
     public static boolean checkPermissions(AppCompatActivity activity) {
         if (ContextCompat.checkSelfPermission(activity, PERMISSION_STRING) != PackageManager.PERMISSION_GRANTED) {

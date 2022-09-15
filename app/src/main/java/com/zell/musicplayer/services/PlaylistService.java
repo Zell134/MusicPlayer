@@ -1,4 +1,4 @@
-package com.zell.musicplayer.Services;
+package com.zell.musicplayer.services;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -28,10 +28,12 @@ public class PlaylistService implements SongAdapter.Listener{
     private boolean isFirstStart = true;
     private List<Item> playlist = new ArrayList<>();
     private int currentSongPosition;
+    private MediaLibraryServiceInterface mediaLibraryService;
 
-    public PlaylistService(Context context, LibraryType libraryType, String songPath) {
+    public PlaylistService(Context context, LibraryType libraryType, String songPath, MediaLibraryServiceInterface mediaLibraryService) {
         this.context = context;
         this.libraryType = libraryType;
+        this.mediaLibraryService = mediaLibraryService;
         setup(songPath);
     }
 
@@ -58,10 +60,14 @@ public class PlaylistService implements SongAdapter.Listener{
         }
     }
 
+    public List<Item> getPlaylist() {
+        return playlist;
+    }
+
     public void setAdapter(){
         listView = ((AppCompatActivity)context).findViewById(R.id.playlist);
-        listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setAdapter(adapter);
+        listView.setLayoutManager(new LinearLayoutManager(context));
     }
 
     private void setPlaylist(List<Item> playlist){
@@ -90,20 +96,20 @@ public class PlaylistService implements SongAdapter.Listener{
         switch (libraryType) {
             case LIBRARY_TYPE_EXTERNAL_STORAGE:
                 if(songPath!=null && new File(songPath).exists()) {
-                    playlist = MediaLibraryService.getFilesList(context, new File(songPath.substring(0, songPath.lastIndexOf("/"))));
+                    playlist = mediaLibraryService.getFilesList(context, new File(songPath.substring(0, songPath.lastIndexOf("/"))));
                 }else{
-                    playlist = MediaLibraryService.getFilesList(context, new File(Environment.getStorageDirectory().getAbsolutePath()));
+                    playlist = mediaLibraryService.getFilesList(context, new File(Environment.getStorageDirectory().getAbsolutePath()));
                 }
                 break;
             case LIBRARY_TYPE_MEDIA_LIBRARY:
-                playlist = MediaLibraryService.getAllMedia(context);
+                playlist = mediaLibraryService.getAllMedia(context);
                 break;
             case LIBRARY_TYPE_ARTISTS:
                 if(songPath!=null && new File(songPath).exists()) {
-                    Song song = MediaLibraryService.getSongByPath(context, songPath);
-                    playlist = MediaLibraryService.getSongsOfAlbum(context, song.getAlbum(), song.getArtist());
+                    Song song = mediaLibraryService.getSongByPath(context, songPath);
+                    playlist = mediaLibraryService.getSongsOfAlbum(context, song.getAlbum(), song.getArtist());
                 }else{
-                    playlist = MediaLibraryService.getArtistList(context);
+                    playlist = mediaLibraryService.getArtistList(context);
                 }
                 break;
         }
@@ -114,7 +120,7 @@ public class PlaylistService implements SongAdapter.Listener{
         List<Item> playlist = new ArrayList<>();
         if(path!=null && new File(path).exists()) {
             if (libraryType == LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE){
-                playlist = MediaLibraryService.getFilesList(context, new File(path));
+                playlist = mediaLibraryService.getFilesList(context, new File(path));
             }
         }
         return playlist;
@@ -215,24 +221,24 @@ public class PlaylistService implements SongAdapter.Listener{
             case LIBRARY_TYPE_EXTERNAL_STORAGE: {
                 if (item.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
                     String filePath = item.getPath();
-                    playlist = MediaLibraryService.getFilesList(context, new File(getSongFolder(filePath)));
+                    playlist = mediaLibraryService.getFilesList(context, new File(getSongFolder(filePath)));
                 } else {
-                    playlist = MediaLibraryService.getFilesList(context, new File(item.getPath()));
+                    playlist = mediaLibraryService.getFilesList(context, new File(item.getPath()));
                 }
                 break;
             }
             case LIBRARY_TYPE_ARTISTS: {
                 if (item.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
                     if (item.getPath().equals("root")) {
-                        playlist = MediaLibraryService.getArtistList(context);
+                        playlist = mediaLibraryService.getArtistList(context);
                     } else {
-                        playlist = MediaLibraryService.getAlbumsOfArtist(context, item.getPath());
+                        playlist = mediaLibraryService.getAlbumsOfArtist(context, item.getPath());
                     }
                 } else {
                     if (!item.getPath().equals("root")) {
-                        playlist = MediaLibraryService.getSongsOfAlbum(context, item.getTitle(), item.getPath());
+                        playlist = mediaLibraryService.getSongsOfAlbum(context, item.getTitle(), item.getPath());
                     } else {
-                        playlist = MediaLibraryService.getAlbumsOfArtist(context, item.getTitle());
+                        playlist = mediaLibraryService.getAlbumsOfArtist(context, item.getTitle());
                     }
                 }
                 break;

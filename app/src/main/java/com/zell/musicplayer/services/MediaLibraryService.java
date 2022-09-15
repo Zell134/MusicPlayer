@@ -1,4 +1,4 @@
-package com.zell.musicplayer.Services;
+package com.zell.musicplayer.services;
 
 
 import android.annotation.SuppressLint;
@@ -21,11 +21,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 
-public class MediaLibraryService {
+public class MediaLibraryService implements MediaLibraryServiceInterface{
 
-    private static Cursor cursor;
-    private static ContentResolver contentResolver;
-    private static final String[] projection = new String[] {
+    private Cursor cursor;
+    private ContentResolver contentResolver;
+    private final String[] projection = new String[] {
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ALBUM,
@@ -33,20 +33,20 @@ public class MediaLibraryService {
             MediaStore.Audio.Media.ARTIST
     };
 
-    public static List<Item> getAllMedia(Context context){
+    public List<Item> getAllMedia(Context context){
         List<Item> playlist = new ArrayList<>();
         getMediaFiles(playlist, "",context);
         return playlist;
     }
 
-    public static List<Item> getArtistList(Context context){
+    public List<Item> getArtistList(Context context){
         List<Item> playlist = new ArrayList<>();
         sortByArtists(playlist, context);
         return playlist;
     }
 
     @SuppressLint("NewApi")
-    public static List<Item> getFilesList(Context context, File file) {
+    public List<Item> getFilesList(Context context, File file) {
         List<Item> playlist = new ArrayList<>();
         File previousFile = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf("/")));
         if(previousFile.exists() && previousFile.canRead()) {
@@ -58,19 +58,19 @@ public class MediaLibraryService {
         return playlist;
     }
 
-    public static List<Item> getAlbumsOfArtist(Context context, String artist){
+    public List<Item> getAlbumsOfArtist(Context context, String artist){
         List<Item> playlist = new ArrayList<>();
         getAlbumList(playlist, context, artist);
         return playlist;
     }
 
-    public static List<Item> getSongsOfAlbum(Context context, String album, String artist){
+    public List<Item> getSongsOfAlbum(Context context, String album, String artist){
         List<Item> playlist = new ArrayList<>();
         getSongsList(playlist, context, album, artist);
         return playlist;
     }
 
-    public static Song getSongByPath(Context context, String path){
+    public Song getSongByPath(Context context, String path){
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.DATA + " LIKE ? ";
@@ -82,7 +82,7 @@ public class MediaLibraryService {
         return null;
     }
 
-    private static void getSongsList(List<Item> playlist, Context context, String album, String artist) {
+    private void getSongsList(List<Item> playlist, Context context, String album, String artist) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         playlist.add(new Folder(artist, context.getResources().getString(R.string.previous_directory)));
@@ -101,7 +101,7 @@ public class MediaLibraryService {
         }
     }
 
-    private static void getAlbumList(List<Item> playlist, Context context, String artist) {
+    private void getAlbumList(List<Item> playlist, Context context, String artist) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         playlist.add(new Folder("root", context.getResources().getString(R.string.previous_directory)));
@@ -119,7 +119,7 @@ public class MediaLibraryService {
         set.forEach(e -> playlist.add(new Folder(artist, e)));
     }
 
-    private static void getMediaFiles(List<Item> playlist, String filePath, Context context){
+    private void getMediaFiles(List<Item> playlist, String filePath, Context context){
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.DATA + " LIKE ? AND " + MediaStore.Audio.Media.DATA + " NOT LIKE ? ";
@@ -146,7 +146,7 @@ public class MediaLibraryService {
         }
     }
 
-    private static void sortByArtists(List<Item> playlist, Context context){
+    private void sortByArtists(List<Item> playlist, Context context){
         contentResolver = context.getContentResolver();
         cursor = contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 new String[] {MediaStore.Audio.Media.ARTIST},
@@ -167,12 +167,12 @@ public class MediaLibraryService {
 
 
 
-    private static Item getSongFromCursorRecord() {
+    private Item getSongFromCursorRecord() {
         String data = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
         String title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
         String album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
         String artist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
         long duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
-        return new Song(data, title, album, artist, duration, true);
+        return new Song(data, title, album, artist, duration);
     }
 }

@@ -12,7 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.Services.PermissionsService;
+import com.zell.musicplayer.services.PermissionsService;
 
 public class PermissionFragment extends Fragment {
 
