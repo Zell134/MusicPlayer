@@ -12,7 +12,7 @@ public interface MediaLibraryServiceInterface {
 
     List<Item> getAllMedia(Context context);
     List<Item> getArtistList(Context context);
-    List<Item> getFilesList(Context context, File file);
+    List<Item> getFilesList(Context context, String file);
     List<Item> getAlbumsOfArtist(Context context, String artist);
     List<Item> getSongsOfAlbum(Context context, String album, String artist);
     Song getSongByPath(Context context, String path);

@@ -46,16 +46,23 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
     }
 
     @SuppressLint("NewApi")
-    public List<Item> getFilesList(Context context, File file) {
-        List<Item> playlist = new ArrayList<>();
-        File previousFile = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf("/")));
-        if(previousFile.exists() && previousFile.canRead()) {
-            playlist.add(new Folder(file.getAbsolutePath(), context.getResources().getString(R.string.previous_directory)));
+    public List<Item> getFilesList(Context context, String fileName) {
+        try {
+            File file = new File(fileName);
+            List<Item> playlist = new ArrayList<>();
+            if (file.exists()) {
+                File previousFile = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf("/")));
+                if (previousFile.exists() && previousFile.canRead()) {
+                    playlist.add(new Folder(file.getAbsolutePath(), context.getResources().getString(R.string.previous_directory)));
+                }
+                Stream.of(file.listFiles(f -> f.isDirectory() && f.canRead()))
+                        .forEach(f -> playlist.add(new Folder(f.getAbsolutePath(), f.getName())));
+                getMediaFiles(playlist, file.getPath(), context);
+            }
+            return playlist;
+        }catch (RuntimeException e){
+            return null;
         }
-        Stream.of(file.listFiles(f -> f.isDirectory() && f.canRead()))
-                .forEach(f->playlist.add(new Folder(f.getAbsolutePath(), f.getName())));
-        getMediaFiles(playlist, file.getPath(),context);
-        return playlist;
     }
 
     public List<Item> getAlbumsOfArtist(Context context, String artist){

@@ -95,17 +95,17 @@ public class PlaylistService implements SongAdapter.Listener{
 
         switch (libraryType) {
             case LIBRARY_TYPE_EXTERNAL_STORAGE:
-                if(songPath!=null && new File(songPath).exists()) {
-                    playlist = mediaLibraryService.getFilesList(context, new File(songPath.substring(0, songPath.lastIndexOf("/"))));
+                if(songPath!=null) {
+                    playlist = mediaLibraryService.getFilesList(context,songPath.substring(0, songPath.lastIndexOf("/")));
                 }else{
-                    playlist = mediaLibraryService.getFilesList(context, new File(Environment.getStorageDirectory().getAbsolutePath()));
+                    playlist = mediaLibraryService.getFilesList(context, Environment.getStorageDirectory().getAbsolutePath());
                 }
                 break;
             case LIBRARY_TYPE_MEDIA_LIBRARY:
                 playlist = mediaLibraryService.getAllMedia(context);
                 break;
             case LIBRARY_TYPE_ARTISTS:
-                if(songPath!=null && new File(songPath).exists()) {
+                if(songPath!=null) {
                     Song song = mediaLibraryService.getSongByPath(context, songPath);
                     playlist = mediaLibraryService.getSongsOfAlbum(context, song.getAlbum(), song.getArtist());
                 }else{
@@ -120,7 +120,7 @@ public class PlaylistService implements SongAdapter.Listener{
         List<Item> playlist = new ArrayList<>();
         if(path!=null && new File(path).exists()) {
             if (libraryType == LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE){
-                playlist = mediaLibraryService.getFilesList(context, new File(path));
+                playlist = mediaLibraryService.getFilesList(context, path);
             }
         }
         return playlist;
@@ -221,9 +221,9 @@ public class PlaylistService implements SongAdapter.Listener{
             case LIBRARY_TYPE_EXTERNAL_STORAGE: {
                 if (item.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
                     String filePath = item.getPath();
-                    playlist = mediaLibraryService.getFilesList(context, new File(getSongFolder(filePath)));
+                    playlist = mediaLibraryService.getFilesList(context, getSongFolder(filePath));
                 } else {
-                    playlist = mediaLibraryService.getFilesList(context, new File(item.getPath()));
+                    playlist = mediaLibraryService.getFilesList(context, item.getPath());
                 }
                 break;
             }
@@ -412,29 +412,24 @@ public class PlaylistService implements SongAdapter.Listener{
         Item currentItem = getCurrentItem();
 
         if (libraryType == LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE) {
-            String folderPath = playlist.get(0).getPath();
-
-            File folder = new File(folderPath);
-            if(folder.exists() && folder.canRead()) {
-                currentSongPosition = 0;
-                if(getCurrentItem().getTitle().equals(context.getResources().getString(R.string.previous_directory)))
-                {
-                    onItemSelect();
-                    if(!playlist.get(0).getTitle().equals(context.getResources().getString(R.string.previous_directory))){
-                        return false;
-                    }
-                    if(playlist.size() == 1){
-                        getPreviousDirectory();
-                    }
-                    if(currentItem.getTitle().equals(context.getResources().getString(R.string.previous_directory))){
-                        currentSongPosition = findItemIndexByPath(currentItem.getPath());
-                    }else {
-                        currentSongPosition = findItemIndexByPath(getSongFolder(currentItem.getPath()));
-                    }
-                }else {
+            currentSongPosition = 0;
+            if (getCurrentItem().getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
+                onItemSelect();
+                if (!playlist.get(0).getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
                     return false;
                 }
+                if (playlist.size() == 1) {
+                    getPreviousDirectory();
+                }
+                if (currentItem.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
+                    currentSongPosition = findItemIndexByPath(currentItem.getPath());
+                } else {
+                    currentSongPosition = findItemIndexByPath(getSongFolder(currentItem.getPath()));
+                }
+            } else {
+                return false;
             }
+
         }else if(libraryType == LibraryType.LIBRARY_TYPE_ARTISTS){
             Item rootFolder = playlist.get(0);
             if(rootFolder.getTitle().equals(context.getResources().getString(R.string.previous_directory))) {
