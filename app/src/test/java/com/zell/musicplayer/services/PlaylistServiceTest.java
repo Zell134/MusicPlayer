@@ -18,17 +18,11 @@ import com.zell.musicplayer.models.Item;
 import com.zell.musicplayer.models.Song;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
-
-@RunWith(RobolectricTestRunner.class)
 public class PlaylistServiceTest extends MainActivitySetup {
 
     private PlaylistService playlistService;

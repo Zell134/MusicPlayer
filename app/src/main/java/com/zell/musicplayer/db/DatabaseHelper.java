@@ -14,6 +14,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "database";
     private static final int DB_VERSION = 1;
+    public String CREATION_QUERY = "CREATE TABLE PROPERTIES (_id INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT,VALUE TEXT);";
 
     public DatabaseHelper(@Nullable Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -31,7 +32,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public void updateDB(SQLiteDatabase db, int oldVersion, int newVersion){
         if (oldVersion < 1) {
-            db.execSQL("CREATE TABLE PROPERTIES (_id INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT,VALUE TEXT);");
+            db.execSQL(CREATION_QUERY);
             insertProperty(db, PropertiesList.LIBRARY_TYPE, LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY.getValue());
         }
     }

@@ -7,12 +7,15 @@ import androidx.test.core.app.ApplicationProvider;
 import com.zell.musicplayer.services.PermissionsService;
 
 import org.junit.Before;
+import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadows.ShadowApplication;
 
-public class MainActivitySetup {
+@RunWith(RobolectricTestRunner.class)
+public abstract class MainActivitySetup {
 
     protected ActivityController controller;
     protected MainActivity activity;

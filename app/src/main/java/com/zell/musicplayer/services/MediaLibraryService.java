@@ -33,12 +33,14 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
             MediaStore.Audio.Media.ARTIST
     };
 
+    @Override
     public List<Item> getAllMedia(Context context){
         List<Item> playlist = new ArrayList<>();
         getMediaFiles(playlist, "",context);
         return playlist;
     }
 
+    @Override
     public List<Item> getArtistList(Context context){
         List<Item> playlist = new ArrayList<>();
         sortByArtists(playlist, context);
@@ -46,6 +48,7 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
     }
 
     @SuppressLint("NewApi")
+    @Override
     public List<Item> getFilesList(Context context, String fileName) {
         try {
             File file = new File(fileName);
@@ -65,18 +68,21 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
         }
     }
 
+    @Override
     public List<Item> getAlbumsOfArtist(Context context, String artist){
         List<Item> playlist = new ArrayList<>();
         getAlbumList(playlist, context, artist);
         return playlist;
     }
 
+    @Override
     public List<Item> getSongsOfAlbum(Context context, String album, String artist){
         List<Item> playlist = new ArrayList<>();
         getSongsList(playlist, context, album, artist);
         return playlist;
     }
 
+    @Override
     public Song getSongByPath(Context context, String path){
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
