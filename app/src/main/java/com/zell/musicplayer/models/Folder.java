@@ -15,9 +15,6 @@ public class Folder implements Item{
         this.isAudioFile = false;
     }
 
-    public Folder() {
-    }
-
     @NonNull
     @Override
     public String toString() {

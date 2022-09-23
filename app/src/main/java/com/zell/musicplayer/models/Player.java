@@ -1,10 +1,8 @@
 package com.zell.musicplayer.models;
 
 import android.media.MediaPlayer;
-import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.BassBoost;
 import android.media.audiofx.Equalizer;
-import android.media.audiofx.NoiseSuppressor;
 
 
 public class Player {
