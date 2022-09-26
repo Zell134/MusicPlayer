@@ -1,4 +1,4 @@
-package com.zell.musicplayer.helpers;
+package com.zell.musicplayer.helpers.cursors;
 
 import android.content.ContentResolver;
 import android.database.CharArrayBuffer;
@@ -7,20 +7,31 @@ import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+
+import com.zell.musicplayer.models.Item;
+import com.zell.musicplayer.models.Song;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FakeCursor implements Cursor {
+public class SongsForMediaLibraryService implements Cursor {
 
     private final int size = 5;
     private int position;
 
-    public List<String[]> getProperties() {
-        List<String[]> list = new ArrayList<>();
+    public List<Item> getAllRecords() {
+        int currentPosition = position;
+        List<Item> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new String[]{String.valueOf(i), "PROPERTY" + i, "VALUE" + i});
+            String[] values = new String[4];
+            for (int j = 0; j < 4; j++) {
+                values[j] = getString(j);
+            }
+            list.add(new Song(values[0], values[1], values[2], values[3], getLong(4)));
+            moveToNext();
         }
+        position = currentPosition;
         return list;
     }
 
@@ -102,12 +113,16 @@ public class FakeCursor implements Cursor {
     @Override
     public int getColumnIndex(String s) {
         switch (s) {
-            case "_id":
+            case MediaStore.Audio.Media.DATA:
                 return 0;
-            case "NAME":
+            case MediaStore.Audio.Media.TITLE:
                 return 1;
-            case "VALUE":
+            case MediaStore.Audio.Media.ALBUM:
                 return 2;
+            case MediaStore.Audio.Media.ARTIST:
+                return 3;
+            case MediaStore.Audio.Media.DURATION:
+                return 4;
         }
         return -1;
     }
@@ -121,23 +136,33 @@ public class FakeCursor implements Cursor {
     public String getColumnName(int i) {
         switch (i) {
             case 0:
-                return "_id";
+                return MediaStore.Audio.Media.DATA;
             case 1:
-                return "NAME";
+                return MediaStore.Audio.Media.TITLE;
             case 2:
-                return "VALUE";
+                return MediaStore.Audio.Media.ALBUM;
+            case 3:
+                return MediaStore.Audio.Media.ARTIST;
+            case 4:
+                return MediaStore.Audio.Media.DURATION;
         }
         return null;
     }
 
     @Override
     public String[] getColumnNames() {
-        return new String[]{"_id", "NAME", "VALUE"};
+        return new String[]{
+                MediaStore.Audio.Media.DATA,
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.DURATION
+        };
     }
 
     @Override
     public int getColumnCount() {
-        return 3;
+        return 5;
     }
 
     @Override
@@ -147,11 +172,10 @@ public class FakeCursor implements Cursor {
 
     @Override
     public String getString(int i) {
-        String[] value = {String.valueOf(position), "PROPERTY" + position, "VALUE" + position};
-        if (i < 3) {
-            return value[i];
+        if (i < 4) {
+            return getColumnName(i) + "_" + position;
         }
-        return null;
+       return null;
     }
 
     @Override
@@ -171,7 +195,10 @@ public class FakeCursor implements Cursor {
 
     @Override
     public long getLong(int i) {
-        return 0;
+        if(i == 4){
+            return position;
+        }
+        return -1;
     }
 
     @Override

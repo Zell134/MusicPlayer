@@ -14,7 +14,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.zell.musicplayer.activities.MainActivitySetup;
-import com.zell.musicplayer.helpers.FakeCursor;
+import com.zell.musicplayer.helpers.cursors.FakeCursorForDatabaseHelper;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -132,8 +132,8 @@ public class DatabaseHelperTest extends MainActivitySetup {
     @Test
     public void getAllPropertyMethod_shouldReturnsSavedProperties() {
 
-        Cursor cursor = new FakeCursor();
-        List<String[]> expectedProps = ((FakeCursor)cursor).getProperties();
+        Cursor cursor = new FakeCursorForDatabaseHelper();
+        List<String[]> expectedProps = ((FakeCursorForDatabaseHelper)cursor).getProperties();
 
         when(db.query(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(cursor);

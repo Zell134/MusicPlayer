@@ -8,12 +8,10 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 
 import com.zell.musicplayer.services.MusicPlayerService;
-import com.zell.musicplayer.services.NotificationService;
 
 public class MediaBrowserViewModel extends AndroidViewModel {
 
@@ -43,18 +41,6 @@ public class MediaBrowserViewModel extends AndroidViewModel {
         }catch(IllegalStateException e){
             mediaBrowser.connect();
         }
-    }
-
-    @Override
-    protected void onCleared() {
-        if(mediaBrowser.isConnected()) {
-            mediaBrowser.disconnect();
-        }
-        if(mediaController != null) {
-            mediaController.getValue().getTransportControls().stop();
-        }
-        NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
-        super.onCleared();
     }
 
     private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
