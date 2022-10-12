@@ -30,7 +30,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         updateDB(sqLiteDatabase, i, i1);
     }
 
-    public void updateDB(SQLiteDatabase db, int oldVersion, int newVersion){
+    public void updateDB(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 1) {
             db.execSQL(CREATION_QUERY);
             insertProperty(db, PropertiesList.LIBRARY_TYPE, LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY.getValue());
@@ -38,11 +38,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public static void insertProperty(SQLiteDatabase db, String name,
-                                    String value) {
+                                      String value) {
         ContentValues property = new ContentValues();
         property.put("NAME", name);
         property.put("VALUE", value);
-        long i = db.insert("PROPERTIES", null, property);
+        db.insert("PROPERTIES", null, property);
     }
 
     public static void updateProperty(SQLiteDatabase db, String name,
@@ -52,40 +52,51 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         property.put("VALUE", value);
         String selection = "NAME = ? ";
         String[] selectionArgs = new String[]{name};
-        if(db.update("PROPERTIES", property, selection, selectionArgs)==0){
+        if (db.update("PROPERTIES", property, selection, selectionArgs) == 0) {
             insertProperty(db, name, value);
         }
     }
 
-    public static String getProperty(SQLiteDatabase db, String property){
+    public static String getProperty(SQLiteDatabase db, String property) {
         String[] projection = new String[]{"_id", "NAME", "VALUE"};
         String selection = "NAME LIKE ? ";
         String[] selectionArgs = new String[]{property};
-        Cursor cursor = db.query("PROPERTIES",
-                projection,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                null);
-        if (cursor!=null && cursor.moveToFirst()) {
-            String result = cursor.getString(cursor.getColumnIndexOrThrow("VALUE"));
-            cursor.close();
-            return result;
+        String result = null;
+        Cursor cursor = null;
+        try {
+            cursor = db.query("PROPERTIES",
+                    projection,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null);
+            if (cursor != null && cursor.moveToFirst()) {
+                result = cursor.getString(cursor.getColumnIndexOrThrow("VALUE"));
+            }
+        } finally {
+            if(cursor != null) {
+                cursor.close();
+            }
         }
-        return null;
+        return result;
     }
 
-    public static Properties getAllProperties(SQLiteDatabase db){
+    public static Properties getAllProperties(SQLiteDatabase db) {
         String[] projection = new String[]{"_id", "NAME", "VALUE"};
-        Cursor cursor = db.query("PROPERTIES", projection, null, null, null, null, null);
+        Cursor cursor = null;
         Properties result = new Properties();
-        if (cursor!=null && cursor.moveToFirst()) {
-            result.put(cursor.getString(1), cursor.getString(2));
-            while (cursor.moveToNext()) {
+        try {
+            cursor = db.query("PROPERTIES", projection, null, null, null, null, null);
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
                 result.put(cursor.getString(1), cursor.getString(2));
+                cursor.moveToNext();
             }
-            cursor.close();
+        } finally {
+            if(cursor != null) {
+                cursor.close();
+            }
         }
         return result;
     }

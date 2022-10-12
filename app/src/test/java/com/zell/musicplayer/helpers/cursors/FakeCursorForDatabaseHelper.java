@@ -57,11 +57,8 @@ public class FakeCursorForDatabaseHelper implements Cursor {
 
     @Override
     public boolean moveToNext() {
-        if (position < size - 1) {
-            position++;
-            return true;
-        }
-        return false;
+        position++;
+        return true;
     }
 
     @Override
@@ -96,6 +93,9 @@ public class FakeCursorForDatabaseHelper implements Cursor {
 
     @Override
     public boolean isAfterLast() {
+        if (position > size - 1) {
+            return true;
+        }
         return false;
     }
 

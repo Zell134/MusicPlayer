@@ -21,11 +21,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 
-public class MediaLibraryService implements MediaLibraryServiceInterface{
+public class MediaLibraryService implements MediaLibraryServiceInterface {
 
     private Cursor cursor;
     private ContentResolver contentResolver;
-    private final String[] projection = new String[] {
+    private final String[] projection = new String[]{
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ALBUM,
@@ -34,14 +34,14 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
     };
 
     @Override
-    public List<Item> getAllMedia(Context context){
+    public List<Item> getAllMedia(Context context) {
         List<Item> playlist = new ArrayList<>();
-        getMediaFiles(playlist, "",context);
+        getMediaFiles(playlist, "", context);
         return playlist;
     }
 
     @Override
-    public List<Item> getArtistList(Context context){
+    public List<Item> getArtistList(Context context) {
         List<Item> playlist = new ArrayList<>();
         sortByArtists(playlist, context);
         return playlist;
@@ -63,36 +63,43 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
                 getMediaFiles(playlist, file.getPath(), context);
             }
             return playlist;
-        }catch (RuntimeException e){
+        } catch (RuntimeException e) {
             return null;
         }
     }
 
     @Override
-    public List<Item> getAlbumsOfArtist(Context context, String artist){
+    public List<Item> getAlbumsOfArtist(Context context, String artist) {
         List<Item> playlist = new ArrayList<>();
         getAlbumList(playlist, context, artist);
         return playlist;
     }
 
     @Override
-    public List<Item> getSongsOfAlbum(Context context, String album, String artist){
+    public List<Item> getSongsOfAlbum(Context context, String album, String artist) {
         List<Item> playlist = new ArrayList<>();
         getSongsList(playlist, context, album, artist);
         return playlist;
     }
 
     @Override
-    public Song getSongByPath(Context context, String path){
+    public Song getSongByPath(Context context, String path) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.DATA + " LIKE ? ";
         String[] selectionArgs = new String[]{path};
-        cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
-        if (cursor!=null && cursor.moveToFirst()) {
-            return (Song) getSongFromCursorRecord();
+        Song song = null;
+        try {
+            cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                song = (Song) getSongFromCursorRecord();
+            }
+        } finally {
+            if(cursor!=null) {
+                cursor.close();
+            }
         }
-        return null;
+        return song;
     }
 
     private void getSongsList(List<Item> playlist, Context context, String album, String artist) {
@@ -104,13 +111,17 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
                 album,
                 artist
         };
-        cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
-        if (cursor!=null && cursor.moveToFirst()) {
-            playlist.add(getSongFromCursorRecord());
-            while (cursor.moveToNext()) {
+        try {
+            cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
                 playlist.add(getSongFromCursorRecord());
+                cursor.moveToNext();
             }
-            cursor.close();
+        } finally {
+            if(cursor!=null) {
+                cursor.close();
+            }
         }
     }
 
@@ -120,19 +131,23 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
         playlist.add(new Folder("root", context.getResources().getString(R.string.previous_directory)));
         String selection = MediaStore.Audio.Media.ARTIST + " LIKE ? ";
         String[] selectionArgs = new String[]{artist};
-        cursor = contentResolver.query(uri, new String[] {MediaStore.Audio.Media.ALBUM}, selection, selectionArgs, null);
         Set<String> set = new HashSet<>();
-        if (cursor!=null && cursor.moveToFirst()) {
-            set.add(cursor.getString(0));
-            while (cursor.moveToNext()) {
+        try {
+            cursor = contentResolver.query(uri, new String[]{MediaStore.Audio.Media.ALBUM}, selection, selectionArgs, null);
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
                 set.add(cursor.getString(0));
+                cursor.moveToNext();
             }
-            cursor.close();
+        } finally {
+            if(cursor!=null) {
+                cursor.close();
+            }
         }
         set.forEach(e -> playlist.add(new Folder(artist, e)));
     }
 
-    private void getMediaFiles(List<Item> playlist, String filePath, Context context){
+    private void getMediaFiles(List<Item> playlist, String filePath, Context context) {
         contentResolver = context.getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.DATA + " LIKE ? AND " + MediaStore.Audio.Media.DATA + " NOT LIKE ? ";
@@ -140,44 +155,49 @@ public class MediaLibraryService implements MediaLibraryServiceInterface{
                 "%" + filePath + "%",
                 "%" + filePath + "/%/%"
         };
-        try{
-            if(filePath.equals("")){
+        try {
+            if (filePath.equals("")) {
                 cursor = contentResolver.query(uri, projection, null, null, null);
 
-            }else {
+            } else {
                 cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
             }
-            if (cursor!=null && cursor.moveToFirst()) {
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
                 playlist.add(getSongFromCursorRecord());
-                while (cursor.moveToNext()) {
-                    playlist.add(getSongFromCursorRecord());
-                }
-                cursor.close();
+                cursor.moveToNext();
             }
         } catch (RuntimeException e) {
             e.printStackTrace();
-        }
-    }
-
-    private void sortByArtists(List<Item> playlist, Context context){
-        contentResolver = context.getContentResolver();
-        cursor = contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                new String[] {MediaStore.Audio.Media.ARTIST},
-                null,
-                null,
-                null
-        );
-        Set<String> set = new HashSet<>();
-        if (cursor!=null && cursor.moveToFirst()) {
-            set.add(cursor.getString(0));
-            while (cursor.moveToNext()) {
-                set.add(cursor.getString(0));
+        } finally {
+            if(cursor!=null) {
+                cursor.close();
             }
-            cursor.close();
         }
-        set.forEach(e -> playlist.add(new Folder("root", e)));
     }
 
+    private void sortByArtists(List<Item> playlist, Context context) {
+        contentResolver = context.getContentResolver();
+        try {
+            cursor = contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    new String[]{MediaStore.Audio.Media.ARTIST},
+                    null,
+                    null,
+                    null
+            );
+            Set<String> set = new HashSet<>();
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                set.add(cursor.getString(0));
+                cursor.moveToNext();
+            }
+            set.forEach(e -> playlist.add(new Folder("root", e)));
+        } finally {
+            if(cursor!=null) {
+                cursor.close();
+            }
+        }
+    }
 
 
     private Item getSongFromCursorRecord() {

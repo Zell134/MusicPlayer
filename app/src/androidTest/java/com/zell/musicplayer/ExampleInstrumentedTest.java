@@ -1,26 +1,35 @@
 package com.zell.musicplayer;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import android.content.Context;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
-import static org.junit.Assert.*;
+import io.appium.java_client.android.AndroidDriver;
 
-/**
- * Instrumented test, which will execute on an Android device.
- *
- * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
- */
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
+
     @Test
     public void useAppContext() {
-        // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.zell.musicplayer", appContext.getPackageName());
+        assertThat(appContext.getPackageName()).isEqualTo("com.zell.musicplayer");
+    }
+
+    @Test
+    public void testAppium() throws InterruptedException {
+        AndroidDriver driver = new DriverManager().getInstance();
+        WebElement el = driver.findElement(By.id("com.zell.musicplayer:id/play"));
+        assertThat(el).isNotNull();
+        el.click();
+        Thread.sleep(2000);
+        driver.quit();
     }
 }

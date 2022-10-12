@@ -29,9 +29,15 @@ public class PlaylistService implements SongAdapter.Listener{
     private List<Item> playlist = new ArrayList<>();
     private int currentSongPosition;
     private MediaLibraryServiceInterface mediaLibraryService;
+    private Listener listener;
+
+    public interface Listener {
+        void playSong(Song song);
+    }
 
     public PlaylistService(Context context, LibraryType libraryType, String songPath, MediaLibraryServiceInterface mediaLibraryService) {
         this.context = context;
+        this.listener = (Listener) context;
         this.libraryType = libraryType;
         this.mediaLibraryService = mediaLibraryService;
         setup(songPath);
@@ -138,7 +144,7 @@ public class PlaylistService implements SongAdapter.Listener{
     public void play() {
         Song song = getCurrentSong();
         if (song != null) {
-            ((MainActivity)context).playSong(song);
+            listener.playSong(song);
         }
     }
 

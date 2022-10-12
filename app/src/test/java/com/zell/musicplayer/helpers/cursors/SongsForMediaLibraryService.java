@@ -68,11 +68,8 @@ public class SongsForMediaLibraryService implements Cursor {
 
     @Override
     public boolean moveToNext() {
-        if (position < size - 1) {
-            position++;
-            return true;
-        }
-        return false;
+        position++;
+        return true;
     }
 
     @Override
@@ -107,6 +104,9 @@ public class SongsForMediaLibraryService implements Cursor {
 
     @Override
     public boolean isAfterLast() {
+        if (position > size - 1) {
+            return true;
+        }
         return false;
     }
 
@@ -175,7 +175,7 @@ public class SongsForMediaLibraryService implements Cursor {
         if (i < 4) {
             return getColumnName(i) + "_" + position;
         }
-       return null;
+        return null;
     }
 
     @Override
@@ -195,7 +195,7 @@ public class SongsForMediaLibraryService implements Cursor {
 
     @Override
     public long getLong(int i) {
-        if(i == 4){
+        if (i == 4) {
             return position;
         }
         return -1;

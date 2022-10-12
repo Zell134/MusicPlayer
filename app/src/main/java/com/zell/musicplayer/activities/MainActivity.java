@@ -60,7 +60,7 @@ import java.text.SimpleDateFormat;
 import java.util.Properties;
 
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, PlaylistService.Listener{
 
     public static String TITLE = "Title";
     public static String ALBUM = "Album";
@@ -251,6 +251,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     };
 
+    @Override
     public void playSong(Song song) {
         if(song!=null) {
 
