@@ -173,8 +173,12 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
     }
 
     public void skipToPrevious() {
-        stop();
-        setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
+        if(player.getCurrentPosition() < 10000) {
+            stop();
+            setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
+        }else{
+            seekTo(0);
+        }
     }
 
     public void skipToNext() {
