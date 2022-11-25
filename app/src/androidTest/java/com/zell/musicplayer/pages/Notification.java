@@ -1,0 +1,149 @@
+package com.zell.musicplayer.pages;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
+
+import com.zell.musicplayer.util.DeviceActions;
+
+import io.qameta.allure.Step;
+
+public class Notification {
+
+    private String appNameText;
+
+    private final UiObject appName;
+    private final UiObject title;
+    private final UiObject artist;
+    private final UiObject previousBtn;
+    private final UiObject nextBtn;
+    private final UiObject playPauseBtn;
+    private final UiObject seekBar;
+    private final UiObject clearNotificationsBtn;
+    private final UiObject timer;
+
+    public Notification(String name) {
+        appNameText = name;
+        DeviceActions.openNotifications();
+        appName = DeviceActions.findObject(new UiSelector().resourceId("android:id/app_name_text"));
+        title = DeviceActions.findObject(new UiSelector().resourceId("android:id/title"));
+        artist = DeviceActions.findObject(new UiSelector().resourceId("android:id/text"));
+        previousBtn = DeviceActions.findObject(new UiSelector().resourceId("android:id/action0"));
+        nextBtn = DeviceActions.findObject(new UiSelector().resourceId("android:id/action1"));
+        playPauseBtn = DeviceActions.findObject(new UiSelector().resourceId("android:id/action2"));
+        seekBar = DeviceActions.findObject(new UiSelector().resourceId("com.android.systemui:id/media_notification_progress_bar"));
+        clearNotificationsBtn = DeviceActions.findObject(new UiSelector().resourceId("com.android.systemui:id/dismiss_view"));
+        timer = DeviceActions.findObject(new UiSelector().resourceId("com.android.systemui:id/media_notification_elapsed_time"));
+    }
+
+    @Step("Notification is shown")
+    public Notification isNotificationShown() {
+        assertThat(getTextOfObject(appName))
+                .as("Notification is shown")
+                .isNotNull()
+                .isEqualTo(appNameText);
+        return this;
+    }
+
+    @Step("Notification is not shown")
+    public Notification isNotificationNotShown() {
+        assertThat(appName)
+                .as("Notification is not shown")
+                .isNotNull()
+                .isNotEqualTo(appNameText);
+        return this;
+    }
+
+    @Step("Click play/pause button")
+    public Notification playPause(){
+       click(playPauseBtn);
+        return this;
+    }
+
+    @Step("Click previous button")
+    public Notification previous(){
+        click(previousBtn);
+        return this;
+    }
+
+    @Step("Click next button")
+    public Notification next(){
+        click(nextBtn);
+        return this;
+    }
+
+    @Step("Click on seekbar")
+    public Notification clickOnSeekbar(){
+        click(seekBar);
+        return this;
+    }
+
+    @Step("Click \"clear notifications\" button")
+    public Notification clearNotifications(){
+        click(clearNotificationsBtn);
+        return this;
+    }
+
+    @Step("Close notifications")
+    public ControlsPage closeNotifications(){
+        DeviceActions.pressBack();
+        return new ControlsPage();
+    }
+
+    @Step("Player is in playing state")
+    public Notification isInPlayingState() {
+        assertThat(checkPlayingState())
+                .as("Timer is running")
+                .isTrue();
+
+        return this;
+    }
+
+    @Step("Player is in paused state")
+    public Notification isInPausedState() {
+        assertThat(checkPlayingState())
+                .as("Timer is stopped")
+                .isNotNull()
+                .isFalse();
+        return this;
+    }
+
+    public String getArtist(){
+        return getTextOfObject(artist);
+    }
+
+    public String getTitle(){
+        return getTextOfObject(artist);
+    }
+
+    public Boolean checkPlayingState() {
+        try {
+            String start = timer.getText();
+            Thread.sleep(2000);
+            String end = timer.getText();
+            return start != end;
+        } catch (UiObjectNotFoundException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private void click(UiObject object){
+        try {
+            object.click();
+        } catch (UiObjectNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getTextOfObject(UiObject object){
+        try {
+            return object.getText();
+        } catch (UiObjectNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}

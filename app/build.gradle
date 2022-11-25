@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id "io.qameta.allure" version "2.9.6"
 }
 
 android {
@@ -18,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId "com.zell.musicplayer"
-        minSdk 24
+        minSdk 26
         targetSdk 28
         versionCode 1
         versionName "1.0"
@@ -42,23 +43,40 @@ android {
     }
 }
 
+def allureVersion = "2.10.0"
+
 dependencies {
 
-    implementation 'com.google.android.material:material:1.6.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.recyclerview:recyclerview:1.2.1'
-    implementation 'org.assertj:assertj-core:3.23.1'
-    debugImplementation 'androidx.fragment:fragment-testing:1.5.2'
+    implementation("com.google.android.material:material:1.6.1",
+            "androidx.constraintlayout:constraintlayout:2.1.4",
+            "androidx.legacy:legacy-support-v4:1.0.0",
+            "androidx.recyclerview:recyclerview:1.2.1",
+            "org.assertj:assertj-core:3.23.1",
+            "io.qameta.allure:allure-junit4:$allureVersion"
+    )
+
+    debugImplementation "androidx.fragment:fragment-testing:1.5.4"
 
 
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'io.appium:java-client:8.1.0'
+    androidTestImplementation("androidx.test.ext:junit:1.1.3",
+            "io.appium:java-client:8.1.0",
+            "androidx.test.uiautomator:uiautomator:2.2.0",
+            "androidx.test.espresso:espresso-core:3.4.0",
+            "com.github.romankh3:image-comparison:4.4.0"
+    )
 
-    testImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'androidx.test:core:1.4.0'
-    testImplementation 'org.robolectric:robolectric:4.7.3'
-    testImplementation 'org.robolectric:shadows-supportv4:4.7.3'
-    testImplementation 'org.mockito:mockito-core:4.7.0'
+//    runtimeOnly("io.qameta.allure:allure-android-model:2.0.0",
+//            "io.qameta.allure:allure-espresso:2.0.0"
+//    )
+
+    testImplementation("junit:junit:4.13.2",
+            "androidx.test:core:1.4.0",
+            "org.robolectric:robolectric:4.7.3",
+            "org.robolectric:shadows-supportv4:4.7.3",
+            "org.mockito:mockito-core:4.7.0"
+    )
+}
+
+allure {
+    version = "2.18.1"
 }
