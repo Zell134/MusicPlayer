@@ -92,42 +92,12 @@ public class Notification {
         return new ControlsPage();
     }
 
-    @Step("Player is in playing state")
-    public Notification isInPlayingState() {
-        assertThat(checkPlayingState())
-                .as("Timer is running")
-                .isTrue();
-
-        return this;
-    }
-
-    @Step("Player is in paused state")
-    public Notification isInPausedState() {
-        assertThat(checkPlayingState())
-                .as("Timer is stopped")
-                .isNotNull()
-                .isFalse();
-        return this;
-    }
-
     public String getArtist(){
         return getTextOfObject(artist);
     }
 
     public String getTitle(){
         return getTextOfObject(artist);
-    }
-
-    public Boolean checkPlayingState() {
-        try {
-            String start = timer.getText();
-            Thread.sleep(2000);
-            String end = timer.getText();
-            return start != end;
-        } catch (UiObjectNotFoundException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     private void click(UiObject object){
