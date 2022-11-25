@@ -77,13 +77,14 @@ public class PlaylistService implements SongAdapter.Listener{
     }
 
     private void setPlaylist(List<Item> playlist){
-        this.playlist = playlist;
-        if(this.playlist.get(0).getTitle().equals(context.getResources().getString(R.string.previous_directory))&&
-                playlist.size() > 1)
-        {
-            this.currentSongPosition = 1;
-        }else {
-            this.currentSongPosition = 0;
+        if (playlist.size() > 0) {
+            this.playlist = playlist;
+            if (this.playlist.get(0).getTitle().equals(context.getResources().getString(R.string.previous_directory)) &&
+                    playlist.size() > 1) {
+                this.currentSongPosition = 1;
+            } else {
+                this.currentSongPosition = 0;
+            }
         }
     }
 
