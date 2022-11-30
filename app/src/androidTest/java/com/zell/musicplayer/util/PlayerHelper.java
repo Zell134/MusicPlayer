@@ -8,8 +8,11 @@ public class PlayerHelper {
 
     private static MediaPlayer player = Player.getInstance().getPlayer();
 
-
     public static boolean isPlaying() {
         return player.isPlaying();
+    }
+
+    public static int getCurrentPosition() {
+        return player.getCurrentPosition();
     }
 }

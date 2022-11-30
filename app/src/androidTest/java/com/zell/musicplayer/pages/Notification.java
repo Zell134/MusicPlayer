@@ -6,7 +6,7 @@ import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
 
-import com.zell.musicplayer.util.DeviceActions;
+import com.zell.musicplayer.util.DeviceHelper;
 
 import io.qameta.allure.Step;
 
@@ -26,16 +26,16 @@ public class Notification {
 
     public Notification(String name) {
         appNameText = name;
-        DeviceActions.openNotifications();
-        appName = DeviceActions.findObject(new UiSelector().resourceId("android:id/app_name_text"));
-        title = DeviceActions.findObject(new UiSelector().resourceId("android:id/title"));
-        artist = DeviceActions.findObject(new UiSelector().resourceId("android:id/text"));
-        previousBtn = DeviceActions.findObject(new UiSelector().resourceId("android:id/action0"));
-        nextBtn = DeviceActions.findObject(new UiSelector().resourceId("android:id/action1"));
-        playPauseBtn = DeviceActions.findObject(new UiSelector().resourceId("android:id/action2"));
-        seekBar = DeviceActions.findObject(new UiSelector().resourceId("com.android.systemui:id/media_notification_progress_bar"));
-        clearNotificationsBtn = DeviceActions.findObject(new UiSelector().resourceId("com.android.systemui:id/dismiss_view"));
-        timer = DeviceActions.findObject(new UiSelector().resourceId("com.android.systemui:id/media_notification_elapsed_time"));
+        DeviceHelper.openNotifications();
+        appName = DeviceHelper.findObject(new UiSelector().resourceId("android:id/app_name_text"));
+        title = DeviceHelper.findObject(new UiSelector().resourceId("android:id/title"));
+        artist = DeviceHelper.findObject(new UiSelector().resourceId("android:id/text"));
+        previousBtn = DeviceHelper.findObject(new UiSelector().resourceId("android:id/action0"));
+        nextBtn = DeviceHelper.findObject(new UiSelector().resourceId("android:id/action1"));
+        playPauseBtn = DeviceHelper.findObject(new UiSelector().resourceId("android:id/action2"));
+        seekBar = DeviceHelper.findObject(new UiSelector().resourceId("com.android.systemui:id/media_notification_progress_bar"));
+        clearNotificationsBtn = DeviceHelper.findObject(new UiSelector().resourceId("com.android.systemui:id/dismiss_view"));
+        timer = DeviceHelper.findObject(new UiSelector().resourceId("com.android.systemui:id/media_notification_elapsed_time"));
     }
 
     @Step("Notification is shown")
@@ -88,7 +88,7 @@ public class Notification {
 
     @Step("Close notifications")
     public ControlsPage closeNotifications(){
-        DeviceActions.pressBack();
+        DeviceHelper.pressBack();
         return new ControlsPage();
     }
 
