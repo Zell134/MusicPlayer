@@ -54,6 +54,7 @@ dependencies {
             "org.assertj:assertj-core:3.23.1",
             "io.qameta.allure:allure-junit4:$allureVersion"
     )
+    implementation 'androidx.test.espresso:espresso-contrib:3.5.0'
 
     debugImplementation "androidx.fragment:fragment-testing:1.5.4"
 

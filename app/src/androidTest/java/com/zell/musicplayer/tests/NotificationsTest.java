@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.zell.musicplayer.R;
 import com.zell.musicplayer.pages.ControlsPage;
 import com.zell.musicplayer.pages.Notification;
+import com.zell.musicplayer.util.AssertionsHelper;
 import com.zell.musicplayer.util.PlayerHelper;
 
 import org.junit.After;
@@ -20,9 +21,7 @@ public class NotificationsTest extends BaseTest{
     private String appName;
     private Notification notifications;
 
-    interface Action{
-        void execute();
-    }
+
 
     @Before
     public void setup(){
@@ -35,7 +34,7 @@ public class NotificationsTest extends BaseTest{
     }
 
     @After
-    public void complete(){
+    public void complete() {
         notifications
                 .closeNotifications();
     }
@@ -63,8 +62,8 @@ public class NotificationsTest extends BaseTest{
     public void songInfoNotChanged_onPlayPauseBtnClick() {
 
         Supplier getter = () -> notifications.getArtist() + notifications.getTitle();
-        Action action = () -> notifications.playPause();
-        checkValueAfterAction(getter, action, false);
+        AssertionsHelper.Action action = () -> notifications.playPause();
+        AssertionsHelper.checkValueAfterAction(getter, action, false);
     }
 
     @Description("Playing state is changed on click \"Play/Pause\" button")
@@ -72,16 +71,16 @@ public class NotificationsTest extends BaseTest{
     public void playingStateChanged_onPlayPauseBtnClick() {
 
         Supplier getter = () -> String.valueOf(PlayerHelper.isPlaying());
-        Action action = () -> notifications.playPause();
-        checkValueAfterAction(getter, action, true);
+        AssertionsHelper.Action action = () -> notifications.playPause();
+        AssertionsHelper.checkValueAfterAction(getter, action, true);
     }
 
     @Description("Song info is changed on click \"Next\" button")
     @Test
     public void songInfoChanged_onNextBtnClick() {
         Supplier getter = () -> notifications.getTitle();
-        Action action = () -> notifications.next();
-        checkValueAfterAction(getter, action, true);
+        AssertionsHelper.Action action = () -> notifications.next();
+        AssertionsHelper.checkValueAfterAction(getter, action, true);
     }
 
     @Description("Song info is changed on click \"Previous\" button")
@@ -89,19 +88,19 @@ public class NotificationsTest extends BaseTest{
     public void songInfoChanged_onPreviousBtnClick() {
         notifications.next();
         Supplier getter = () -> notifications.getTitle();
-        Action action = () -> notifications.previous();
-        checkValueAfterAction(getter, action, true);
+        AssertionsHelper.Action action = () -> notifications.previous();
+        AssertionsHelper.checkValueAfterAction(getter, action, true);
     }
 
     @Description("Song info stay the same on click \"Next\" and then  \"Previous\"")
     @Test
     public void songInfoIsTheSame_onClickNextAndPreviousBtn() {
         Supplier getter = () -> notifications.getArtist() + notifications.getTitle();
-        Action action = () -> {
+        AssertionsHelper.Action action = () -> {
             notifications.next();
             notifications.previous();
         };
-        checkValueAfterAction(getter, action, false);
+        AssertionsHelper.checkValueAfterAction(getter, action, false);
 
     }
 
@@ -112,8 +111,10 @@ public class NotificationsTest extends BaseTest{
                 .isNotificationShown()
                 .clearNotifications()
                 .isNotificationNotShown()
-                .closeNotifications()
-                .isInPausedState();
+                .closeNotifications();
+        assertThat(PlayerHelper.isPlaying())
+                .as("Player is in not playing state")
+                .isFalse();
     }
 
 
@@ -121,33 +122,16 @@ public class NotificationsTest extends BaseTest{
     @Test
     public void playingStateChanged_onOnSeekbarClick() {
         Supplier getter = () -> String.valueOf(PlayerHelper.isPlaying());
-        Action action = () -> notifications.clickOnSeekbar();
-        checkValueAfterAction(getter, action, true);
+        AssertionsHelper.Action action = () -> notifications.clickOnSeekbar();
+        AssertionsHelper.checkValueAfterAction(getter, action, true);
     }
 
     @Description("Song info stay the same on click on seekbar")
     @Test
     public void songInfoIsTheSame_onOnSeekbarClick() {
         Supplier getter = () -> notifications.getTitle();
-        Action action = () -> notifications.clickOnSeekbar();
-        checkValueAfterAction(getter, action, false);
+        AssertionsHelper.Action action = () -> notifications.clickOnSeekbar();
+        AssertionsHelper.checkValueAfterAction(getter, action, false);
     }
 
-    /**
-     * Compare required value before and after some actions.
-     *
-     *@param getValue getter for the required value
-     *@param actions actions to execute
-     *@param isShouldBeChanged should actual and expected values be equals or not
-     */
-
-    private void checkValueAfterAction(Supplier getValue, Action actions, boolean isShouldBeChanged){
-        String expectedValue = (String) getValue.get();
-        actions.execute();
-        String actualValue = (String) getValue.get();
-        String description = isShouldBeChanged ? "Value has been changed" : "Value has not been changed";
-        assertThat(actualValue)
-                .as(description)
-                .matches(value -> isShouldBeChanged != value.equals(expectedValue));
-    }
 }
