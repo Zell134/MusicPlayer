@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
@@ -23,7 +24,7 @@ public class DeviceHelper {
     public static int ROTATION_180 = UiAutomation.ROTATION_FREEZE_180;
     public static int ROTATION_270 = UiAutomation.ROTATION_FREEZE_270;
 
-    private static final String PACKAGE = "com.zell.musicplayer";
+    public static final String PACKAGE = "com.zell.musicplayer";
 
     private static final UiDevice device = UiDevice.getInstance(getInstrumentation());
 
@@ -61,5 +62,10 @@ public class DeviceHelper {
         context.startActivity(intent);
 
         device.wait(Until.hasObject(By.pkg(PACKAGE).depth(0)), 5000);
+
+    }
+
+    public static void clearDatabase(){
+        InstrumentationRegistry.getInstrumentation().getTargetContext().deleteDatabase("database");
     }
 }
