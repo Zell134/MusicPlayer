@@ -1,12 +1,14 @@
 package com.zell.musicplayer.util;
 
 import android.media.MediaPlayer;
+import android.media.audiofx.Equalizer;
 
 import com.zell.musicplayer.models.Player;
 
 public class PlayerHelper {
 
     private static MediaPlayer player = Player.getInstance().getPlayer();
+    private static Equalizer equalizer = Player.getInstance().getEqualizer();
 
     public static boolean isPlaying() {
         return player.isPlaying();
@@ -14,5 +16,17 @@ public class PlayerHelper {
 
     public static int getCurrentPosition() {
         return player.getCurrentPosition();
+    }
+
+    public static short getEqualizerPresetsCount(){
+        return equalizer.getNumberOfPresets();
+    }
+
+    public static String getEqualizerPresetNameAtPosition(short position){
+        return equalizer.getPresetName(position);
+    }
+
+    public static short getNumberOfEqualizerBands(){
+        return equalizer.getNumberOfBands();
     }
 }
