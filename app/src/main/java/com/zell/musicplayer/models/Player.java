@@ -11,6 +11,7 @@ public class Player {
     private MediaPlayer player;
     private Equalizer equalizer;
     private BassBoost bassBoost;
+    private boolean isPaused;
 
     private Player(){
         player = new MediaPlayer();
@@ -48,4 +49,11 @@ public class Player {
         return bassBoost;
     }
 
+    public boolean isPaused() {
+        return isPaused;
+    }
+
+    public void setPaused(boolean paused) {
+        isPaused = paused;
+    }
 }

@@ -10,7 +10,15 @@ public class PlayerHelper {
     private static MediaPlayer player = Player.getInstance().getPlayer();
     private static Equalizer equalizer = Player.getInstance().getEqualizer();
 
-    public static boolean isPlaying() {
+    public static boolean isPaused() {
+        return Player.getInstance().isPaused();
+    }
+
+    public static boolean isPlaying(){
+        return !isStopped() && !isPaused();
+    }
+
+    public static boolean isStopped() {
         return player.isPlaying();
     }
 

@@ -26,7 +26,7 @@ public class ControlsPageTest extends BaseTest {
     public void setOnPlayingStateOnStart() {
         step("Set player on playing state on start application", () ->
         {
-            if (!PlayerHelper.isPlaying()) {
+            if (PlayerHelper.isStopped()) {
                 controlsPage.playPause();
             }
         });
@@ -46,9 +46,14 @@ public class ControlsPageTest extends BaseTest {
                 .as("Player is in playing state")
                 .isTrue();
         controlsPage.playPause();
-        assertThat(PlayerHelper.isPlaying())
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        assertThat(PlayerHelper.isPaused())
                 .as("Player is in paused state")
-                .isFalse();
+                .isTrue();
     }
 
     @Description("Song name and song info fields should displayed on playing")
@@ -103,6 +108,7 @@ public class ControlsPageTest extends BaseTest {
                 () -> DeviceHelper.changeOrientation(DeviceHelper.ROTATION_270),
                 false
         );
+        DeviceHelper.changeOrientation(DeviceHelper.ROTATION_0);
     }
 
     @Description("The same song is playing on click \"Next\" and than \"Previous\" button")
@@ -206,3 +212,4 @@ public class ControlsPageTest extends BaseTest {
                 .isEqualTo(expectedSongInfo);
     }
 }
+
