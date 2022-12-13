@@ -12,8 +12,17 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public abstract class  BaseTest {
 
+    private MainActivity activity;
+
     @Rule
     public ActivityScenarioRule<MainActivity> activityScenarioRule = new ActivityScenarioRule<>(MainActivity.class);
+
+    protected MainActivity getActivity(){
+        activityScenarioRule.getScenario().onActivity(activity -> {
+            this.activity = activity;
+        });
+        return activity;
+    }
 
 }
 
