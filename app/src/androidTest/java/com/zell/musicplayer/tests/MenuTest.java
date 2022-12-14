@@ -2,21 +2,28 @@ package com.zell.musicplayer.tests;
 
 import static io.qameta.allure.Allure.step;
 
+import com.zell.musicplayer.models.Item;
+import com.zell.musicplayer.models.Song;
 import com.zell.musicplayer.pages.MenuPage;
+import com.zell.musicplayer.pages.PlaylistPage;
 import com.zell.musicplayer.pages.ToolbarPage;
+import com.zell.musicplayer.services.MediaLibraryService;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Random;
+
 import io.qameta.allure.Step;
 
-public class MenuTest extends BaseTest{
+public class MenuTest extends BaseTest {
 
     private MenuPage menu;
 
     @Step("Open menu")
     @Before
-    public void setup(){
+    public void setup() {
         openMenu();
         menu = new MenuPage();
     }
@@ -61,7 +68,43 @@ public class MenuTest extends BaseTest{
                 .isEqualizerOpened();
     }
 
-    private void openMenu(){
-        step("Open menu",new ToolbarPage()::openMenu);
+    @Step("All media playlist displayed on click \"All media storage\" item")
+    @Test
+    public void allMediaPlaylistDisplayed_onclickAllMedia() {
+        List<Item> playlist = new MediaLibraryService().getAllMedia(getActivity());
+        int playlistSize = playlist.size();
+        int position = getRandomPosition(playlistSize);
+        Song expectedSong = (Song) playlist.get(position);
+        openMenu();
+        menu.clickAllMedia();
+        new PlaylistPage().IsPlaylistHasSize(playlistSize)
+                .scrollToPosition(position)
+                .isItemAtPositionHasTitle(position, expectedSong.getTitle())
+                .isItemAtPositionHasArtistName(position, expectedSong.getArtist());
+
     }
+
+    @Step("Artists playlist displayed on click \"Artists storage\" item")
+    @Test
+    public void PlaylistDisplayed_onclickArtists() {
+        List<Item> playlist = new MediaLibraryService().getArtistList(getActivity());
+        int playlistSize = playlist.size();
+        int position = getRandomPosition(playlistSize);
+        Item expectedItem = playlist.get(position);
+        openMenu();
+        menu.clickArtists();
+        new PlaylistPage().IsPlaylistHasSize(playlistSize)
+                .scrollToPosition(position)
+                .isItemAtPositionHasTitle(position, expectedItem.getTitle());
+
+    }
+
+    private void openMenu() {
+        step("Open menu", new ToolbarPage()::openMenu);
+    }
+
+    private int getRandomPosition(int listSize) {
+        return Math.abs(new Random().nextInt(listSize));
+    }
+
 }

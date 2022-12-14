@@ -310,16 +310,19 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                 playbackStateBuilder.setActions(actions);
                 playbackStateBuilder.setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1);
                 mediaSession.setPlaybackState(playbackStateBuilder.build());
+                Player.getInstance().setPaused(false);
                 break;
             case PlaybackStateCompat.STATE_PLAYING:
                 playbackStateBuilder.setState(state, player.getCurrentPosition(), 1);
                 playbackStateBuilder.setActions(actions);
                 mediaSession.setPlaybackState(playbackStateBuilder.build());
+                Player.getInstance().setPaused(false);
                 break;
             case PlaybackStateCompat.STATE_PAUSED:
                 playbackStateBuilder.setActions(actions);
                 playbackStateBuilder.setState(state, player.getCurrentPosition(), 1);
                 mediaSession.setPlaybackState(playbackStateBuilder.build());
+                Player.getInstance().setPaused(true);
                 break;
             case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
             case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:

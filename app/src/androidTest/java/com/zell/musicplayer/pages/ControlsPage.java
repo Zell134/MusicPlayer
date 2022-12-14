@@ -6,6 +6,7 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.CoreMatchers.not;
 
 import androidx.test.espresso.ViewInteraction;
@@ -91,6 +92,18 @@ public class ControlsPage {
     public ControlsPage isSongInfoIsNotVisible() {
         songInfo.check(matches(not(isDisplayed())));
         songName.check(matches(not(isDisplayed())));
+        return this;
+    }
+
+    @Step("Song info has text {0}")
+    public ControlsPage isSongInfoHasText(String text) {
+        songInfo.check(matches(withText(text)));
+        return this;
+    }
+
+    @Step("Song name has text {0}")
+    public ControlsPage isSongNameHasText(String text) {
+        songName.check(matches(withText(text)));
         return this;
     }
 
