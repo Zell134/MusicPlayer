@@ -173,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         exit.setOnClickListener(view -> {
             NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
             onDestroy();
-            System.exit(0);
+            super.onDestroy();
         });
 
         equalizerButton.setOnClickListener(view -> equalizerButtonOnClick());
@@ -318,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case(R.id.exit):
                 NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
                 onDestroy();
-                System.exit(0);
+                super.onDestroy();
                 break;
         }
         item.setChecked(true);
