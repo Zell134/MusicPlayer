@@ -1,7 +1,6 @@
 package com.zell.musicplayer.activities;
 
 
-import static com.zell.musicplayer.services.PermissionsService.checkPermissions;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_ARTISTS;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_EXTERNAL_STORAGE;
 import static com.zell.musicplayer.db.LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY;
@@ -11,6 +10,7 @@ import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
 import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
 import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
+import static com.zell.musicplayer.services.PermissionsService.checkPermissions;
 
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
@@ -22,8 +22,10 @@ import android.os.Handler;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -42,17 +44,17 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.navigation.NavigationView;
 import com.zell.musicplayer.R;
-import com.zell.musicplayer.services.MediaLibraryService;
-import com.zell.musicplayer.services.NotificationService;
-import com.zell.musicplayer.services.PermissionsService;
-import com.zell.musicplayer.services.PlaylistService;
-import com.zell.musicplayer.services.PropertiesService;
 import com.zell.musicplayer.db.LibraryType;
 import com.zell.musicplayer.fragments.EqualizerFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.fragments.PlaylistFragment;
 import com.zell.musicplayer.models.Player;
 import com.zell.musicplayer.models.Song;
+import com.zell.musicplayer.services.MediaLibraryService;
+import com.zell.musicplayer.services.NotificationService;
+import com.zell.musicplayer.services.PermissionsService;
+import com.zell.musicplayer.services.PlaylistService;
+import com.zell.musicplayer.services.PropertiesService;
 import com.zell.musicplayer.viewModels.MediaBrowserViewModel;
 import com.zell.musicplayer.viewModels.PlaylistViewModel;
 
@@ -138,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ImageView exit = findViewById(R.id.exit);
         SeekBar seekbar = findViewById(R.id.seekbar);
 
-        if(playlistService == null) {
+        if (playlistService == null) {
             playlistService = new PlaylistService(this,
                     getLibraryTypeFromProps(),
                     properties.getProperty(CURRENT_SONG),
@@ -166,9 +168,24 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         stopButton.setOnClickListener(view -> stopPlaying());
 
-        previousButton.setOnClickListener(view -> mediaController.getTransportControls().skipToPrevious());
+        previousButton.setOnTouchListener((view, motionEvent) -> {
+            int action = motionEvent.getAction();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
+                AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+                am.dispatchMediaKeyEvent(new KeyEvent(action, KeyEvent.KEYCODE_MEDIA_PREVIOUS));
+            }
 
-        nextButton.setOnClickListener(view -> mediaController.getTransportControls().skipToNext());
+            return true;
+        });
+
+        nextButton.setOnTouchListener((view, motionEvent) -> {
+            int action = motionEvent.getAction();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
+                AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+                am.dispatchMediaKeyEvent(new KeyEvent(action, KeyEvent.KEYCODE_MEDIA_NEXT));
+            }
+            return true;
+        });
 
         exit.setOnClickListener(view -> {
             NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
