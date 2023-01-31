@@ -23,7 +23,7 @@ public class MediaBrowserViewModel extends AndroidViewModel {
     }
 
     public MutableLiveData<MediaControllerCompat> getMediaController() {
-        if(mediaBrowser == null){
+        if (mediaBrowser == null) {
             Context context = getApplication().getBaseContext();
             mediaBrowser = new MediaBrowserCompat(context,
                     new ComponentName(context, MusicPlayerService.class),
@@ -33,14 +33,18 @@ public class MediaBrowserViewModel extends AndroidViewModel {
         return mediaController;
     }
 
-    public void connect(){
+    public void connect() {
         try {
             if (!mediaBrowser.isConnected()) {
                 mediaBrowser.connect();
             }
-        }catch(IllegalStateException e){
+        } catch (IllegalStateException e) {
             mediaBrowser.connect();
         }
+    }
+
+    public void disconnect() {
+        mediaBrowser.disconnect();
     }
 
     private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {

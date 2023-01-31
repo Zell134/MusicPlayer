@@ -18,12 +18,13 @@ import java.util.List;
 
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHolder> {
 
-    private final SongAdapter.Listener listener;
+    private SongAdapter.Listener listener;
     private List<Item> playlist;
     private int foldersCount;
 
     public interface Listener {
         void itemSelected(int position);
+
         int getCurrentSongPosition();
     }
 
@@ -33,24 +34,25 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
         this.listener = listener;
     }
 
+    public void clearListener() {
+        if (listener != null) {
+            listener = null;
+        }
+    }
+
     @SuppressLint("NotifyDataSetChanged")
     public void setPlaylist(List<Item> playlist) {
         this.playlist = playlist;
         foldersCount = 0;
         playlist.forEach(item -> {
-            if(!item.isAudioFile()){
+            if (!item.isAudioFile()) {
                 foldersCount++;
             }
         });
         notifyDataSetChanged();
     }
 
-    public void setSelectedPosition(int oldPosition, int newPosition) {
-        notifyItemChanged(oldPosition);
-        notifyItemChanged(newPosition);
-    }
-
-    public List<Item> getPlaylist(){
+    public List<Item> getPlaylist() {
         return playlist;
     }
 
@@ -84,11 +86,11 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
             TextView songView = itemView.findViewById(R.id.song_title);
             TextView artistView = itemView.findViewById(R.id.song_artist);
 
-            if(item.isAudioFile()){
+            if (item.isAudioFile()) {
                 songView.setText((position - foldersCount + 1) + ". " + item.getTitle());
                 artistView.setText(((Song) item).getArtist());
                 icon.setImageResource(R.drawable.music_icon);
-            }else {
+            } else {
                 songView.setText(item.getTitle());
                 artistView.setText("");
                 icon.setImageResource(R.drawable.folder_icon);

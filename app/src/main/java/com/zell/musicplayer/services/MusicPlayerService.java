@@ -132,7 +132,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
         @Override
         public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
 
-            KeyEvent keyEvent = (KeyEvent) mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+            KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
             int keyKode = keyEvent.getKeyCode();
 
             if (keyKode == KeyEvent.KEYCODE_MEDIA_NEXT || keyKode == KeyEvent.KEYCODE_MEDIA_PREVIOUS) {
@@ -140,12 +140,12 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
                 switch (keyEvent.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         if (keyKode == KeyEvent.KEYCODE_MEDIA_NEXT) {
-                            if(rewindThread == null || !rewindThread.isRunning()) {
+                            if (rewindThread == null || !rewindThread.isRunning()) {
                                 rewindThread = new RewindRunnable(true);
                             }
                         }
                         if (keyKode == KeyEvent.KEYCODE_MEDIA_PREVIOUS) {
-                            if(rewindThread == null || !rewindThread.isRunning()) {
+                            if (rewindThread == null || !rewindThread.isRunning()) {
                                 rewindThread = new RewindRunnable(false);
                             }
                         }
@@ -487,7 +487,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             this.isForwardRewind = isForwardRewind;
         }
 
-        public boolean isRunning(){
+        public boolean isRunning() {
             return running.get();
         }
 
@@ -515,7 +515,7 @@ public class MusicPlayerService extends MediaBrowserServiceCompat implements Med
             while (running.get()) {
                 try {
                     TimeUnit.MILLISECONDS.sleep(delay);
-                    if(running.get()) {
+                    if (running.get()) {
                         if (isForwardRewind) {
                             rewind();
                         } else {

@@ -35,7 +35,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -48,10 +47,10 @@ import com.zell.musicplayer.db.LibraryType;
 import com.zell.musicplayer.fragments.EqualizerFragment;
 import com.zell.musicplayer.fragments.PermissionFragment;
 import com.zell.musicplayer.fragments.PlaylistFragment;
+import com.zell.musicplayer.models.Item;
 import com.zell.musicplayer.models.Player;
 import com.zell.musicplayer.models.Song;
 import com.zell.musicplayer.services.MediaLibraryService;
-import com.zell.musicplayer.services.NotificationService;
 import com.zell.musicplayer.services.PermissionsService;
 import com.zell.musicplayer.services.PlaylistService;
 import com.zell.musicplayer.services.PropertiesService;
@@ -59,10 +58,11 @@ import com.zell.musicplayer.viewModels.MediaBrowserViewModel;
 import com.zell.musicplayer.viewModels.PlaylistViewModel;
 
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Properties;
 
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, PlaylistService.Listener{
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, PlaylistService.Listener {
 
     public static String TITLE = "Title";
     public static String ALBUM = "Album";
@@ -78,47 +78,60 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private boolean ifEqualizerOpened = false;
     private MediaBrowserViewModel mediaBrowserViewModel;
     private PlaylistViewModel playlistViewModel;
+    private PlayListViewListener playListViewlistener;
+
+    public interface PlayListViewListener {
+        void setSelectedPosition(int oldPosition, int newPosition);
+
+        void updateAdapter(List<Item> playlist);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         properties = PropertiesService.getAllProperties(this);
-
-        if (checkPermissions(this)) {
-            setMainFragment();
-        } else {
-            setFragment(new PermissionFragment());
-        }
-        playlistViewModel = new ViewModelProvider(this).get(PlaylistViewModel.class);
-        playlistService = playlistViewModel.getPlaylistService();
-        if(playlistService != null){
-            playlistService.setContext(this);
-        }
 
         mediaBrowserViewModel = new ViewModelProvider(this).get(MediaBrowserViewModel.class);
 
         mediaBrowserViewModel
                 .getMediaController()
-                .observe(this,mediaControllerCompat -> {
+                .observe(this, mediaControllerCompat -> {
                     this.mediaController = mediaControllerCompat;
                     MediaControllerCompat.setMediaController(MainActivity.this, mediaController);
                     mediaController.registerCallback(controllerCallback);
                     buildControls();
-                    if(mediaController.getMetadata() != null) {
+                    if (mediaController.getMetadata() != null) {
                         currentState = mediaController.getPlaybackState().getState();
                         controllerCallback.onMetadataChanged(mediaController.getMetadata());
                         controllerCallback.onPlaybackStateChanged(mediaController.getPlaybackState());
 
-                    }else{
-                        setEqualizer();
+                    } else {
+                        new Handler()
+                                .post(() -> {
+                                    setEqualizer();
+                                    if (playlistService != null) {
+                                        playlistService.play();
+                                    }
+                                });
                     }
                 });
+
+        if (checkPermissions(this)) {
+            setMainFragment();
+            new Handler()
+                    .post(() -> {
+                        setPlayListService();
+                    });
+        } else {
+            setFragment(new PermissionFragment());
+        }
 
         setToolbar();
     }
 
-    private void setToolbar(){
+    private void setToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -131,7 +144,37 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         navigationView.setNavigationItemSelectedListener(this);
     }
 
+    private void setPlayListService() {
+        playlistViewModel = new ViewModelProvider(this).get(PlaylistViewModel.class);
+        playlistService = playlistViewModel.getPlaylistService();
+        if (playlistService == null) {
+            playlistService = new PlaylistService(this,
+                    getLibraryTypeFromProps(),
+                    properties.getProperty(CURRENT_SONG),
+                    new MediaLibraryService()
+            );
+            playlistViewModel.setPlaylistService(playlistService);
+        } else {
+            playlistService.setContext(this);
+        }
+        updateAdapter(playlistService.getPlaylist());
+    }
+
     private void buildControls() {
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        Menu menu = navigationView.getMenu();
+        switch (getLibraryTypeFromProps()) {
+            case LIBRARY_TYPE_EXTERNAL_STORAGE:
+                menu.findItem(R.id.external_storage).setChecked(true);
+                break;
+            case LIBRARY_TYPE_MEDIA_LIBRARY:
+                menu.findItem(R.id.all_media).setChecked(true);
+                break;
+            case LIBRARY_TYPE_ARTISTS:
+                menu.findItem(R.id.artists).setChecked(true);
+                break;
+        }
+
         ImageButton playButton = findViewById(R.id.play);
         ImageButton stopButton = findViewById(R.id.stop);
         ImageButton previousButton = findViewById(R.id.previous);
@@ -140,14 +183,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ImageView exit = findViewById(R.id.exit);
         SeekBar seekbar = findViewById(R.id.seekbar);
 
-        if (playlistService == null) {
-            playlistService = new PlaylistService(this,
-                    getLibraryTypeFromProps(),
-                    properties.getProperty(CURRENT_SONG),
-                    new MediaLibraryService()
-            );
-            playlistViewModel.setPlaylistService(playlistService);
-        }
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
         playButton.setOnClickListener(view -> {
@@ -188,36 +223,35 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
 
         exit.setOnClickListener(view -> {
-            NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
-            onDestroy();
-            super.onDestroy();
+            mediaBrowserViewModel.disconnect();
+            this.finishAffinity();
         });
 
         equalizerButton.setOnClickListener(view -> equalizerButtonOnClick());
     }
 
-    private void setEqualizer(){
+    private void setEqualizer() {
         Player player = Player.getInstance();
         Equalizer equalizer = player.getEqualizer();
         BassBoost bassBoost = player.getBassBoost();
 
         properties.forEach((k, v) -> {
             String key = k.toString();
-            if(key.contains(EQUALIZER)){
+            if (key.contains(EQUALIZER)) {
                 short band = Short.parseShort(key.split(DELIMITER)[1]);
-                equalizer.setBandLevel(band,Short.parseShort(v.toString()));
+                equalizer.setBandLevel(band, Short.parseShort(v.toString()));
             }
-        } );
+        });
 
-        if(properties.containsKey(BASS_BOOST)) {
+        if (properties.containsKey(BASS_BOOST)) {
             if (bassBoost.getStrengthSupported()) {
                 bassBoost.setStrength(Short.parseShort(properties.getProperty(BASS_BOOST)));
             }
         }
-        if(properties.containsKey(VOLUME_LEVEL)) {
+        if (properties.containsKey(VOLUME_LEVEL)) {
             int volumeLevel = Integer.parseInt(properties.getProperty(VOLUME_LEVEL));
             AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-            am.setStreamVolume(AudioManager.STREAM_MUSIC,volumeLevel,0);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, volumeLevel, 0);
         }
     }
 
@@ -230,23 +264,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
-    @Override
     protected void onDestroy() {
-        if(mediaController != null) {
+        playListViewlistener = null;
+        if (playlistService != null) {
+            playlistService.clearListener();
+        }
+        if (mediaController != null) {
             mediaController.unregisterCallback(controllerCallback);
         }
 
-        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-        int volumeLevel= am.getStreamVolume(AudioManager.STREAM_MUSIC);
-        PropertiesService.setVolume(this, String.valueOf(volumeLevel));
+        new Handler().post(() -> {
+            AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+            int volumeLevel = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+            PropertiesService.setVolume(this, String.valueOf(volumeLevel));
+        });
         super.onDestroy();
     }
 
-    private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener(){
+    private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
+
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
             TextView timer = findViewById(R.id.timer);
@@ -262,7 +298,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
             SeekBar seekbar = findViewById(R.id.seekbar);
-            if(currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
+            if (currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
                 mediaController.getTransportControls().seekTo(seekbar.getProgress());
             }
         }
@@ -270,30 +306,41 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void playSong(Song song) {
-        if(song!=null) {
+        if (song != null) {
 
             Bundle bundle = new Bundle();
             bundle.putString(TITLE, song.getTitle());
             bundle.putString(ALBUM, song.getAlbum());
             bundle.putString(ARTIST, song.getArtist());
             bundle.putLong(DURATION, song.getDuration());
-            if(mediaController != null) {
+            if (mediaController != null) {
                 mediaController
                         .getTransportControls()
                         .playFromUri(Uri.parse(song.getPath()), bundle);
-                PropertiesService.setCurrentSong(MainActivity.this, song.getPath());
+                new Handler().post(() -> PropertiesService.setCurrentSong(MainActivity.this, song.getPath()));
             }
         }
     }
 
-    public void stopPlaying(){
+    @Override
+    public void updateAdapter(List<Item> playlist) {
+        playListViewlistener.updateAdapter(playlist);
+    }
+
+    @Override
+    public void stopPlaying() {
         if (currentState == PlaybackStateCompat.STATE_PLAYING || currentState == PlaybackStateCompat.STATE_PAUSED) {
             mediaController.getTransportControls().stop();
         }
         resetStateOnStop();
     }
 
-    private void resetStateOnStop(){
+    @Override
+    public void setSelectedPosition(int oldPosition, int newPosition) {
+        playListViewlistener.setSelectedPosition(oldPosition, newPosition);
+    }
+
+    private void resetStateOnStop() {
         TextView songName = findViewById(R.id.playing_song_name);
         TextView songInfo = findViewById(R.id.playing_song_info);
         ImageView albumArt = findViewById(R.id.album_art);
@@ -304,6 +351,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         albumArt.setImageResource(R.drawable.empty_album_art);
         timer.setText("0/0");
     }
+
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -311,31 +359,34 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             mediaBrowserViewModel.connect();
             PermissionsService.closeNotification(this);
             setMainFragment();
+            new Handler()
+                    .post(() -> {
+                        setPlayListService();
+                    });
         }
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        switch(item.getItemId()){
-            case(R.id.external_storage):
+        switch (item.getItemId()) {
+            case (R.id.external_storage):
                 PropertiesService.setLibraryType(this, LIBRARY_TYPE_EXTERNAL_STORAGE);
                 playlistService.setLibraryType(LIBRARY_TYPE_EXTERNAL_STORAGE);
                 break;
-            case(R.id.all_media):
-                PropertiesService.setLibraryType(this,LIBRARY_TYPE_MEDIA_LIBRARY);
+            case (R.id.all_media):
+                PropertiesService.setLibraryType(this, LIBRARY_TYPE_MEDIA_LIBRARY);
                 playlistService.setLibraryType(LIBRARY_TYPE_MEDIA_LIBRARY);
                 break;
-            case(R.id.artists):
-                PropertiesService.setLibraryType(this,LIBRARY_TYPE_ARTISTS);
+            case (R.id.artists):
+                PropertiesService.setLibraryType(this, LIBRARY_TYPE_ARTISTS);
                 playlistService.setLibraryType(LIBRARY_TYPE_ARTISTS);
                 break;
-            case(R.id.menu_equalizer):
+            case (R.id.menu_equalizer):
                 equalizerButtonOnClick();
                 break;
-            case(R.id.exit):
-                NotificationManagerCompat.from(getApplication().getBaseContext()).cancel(NotificationService.ID);
-                onDestroy();
-                super.onDestroy();
+            case (R.id.exit):
+                mediaBrowserViewModel.disconnect();
+                this.finishAffinity();
                 break;
         }
         item.setChecked(true);
@@ -350,24 +401,23 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else if (ifEqualizerOpened){
+        } else if (ifEqualizerOpened) {
             setMainFragment();
             ifEqualizerOpened = false;
-        }else
-        {
+        } else {
             playlistService.onBackPressed();
         }
     }
 
-    private void setCurrentState(){
+    private void setCurrentState() {
         SeekBar seekbar = findViewById(R.id.seekbar);
         TextView timer = findViewById(R.id.timer);
         MediaMetadataCompat metadata = mediaController.getMetadata();
         long duration;
         long position = mediaController.getPlaybackState().getPosition();
-        if(metadata != null) {
-             duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
-        }else{
+        if (metadata != null) {
+            duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
+        } else {
             duration = 0;
         }
         seekbar.setProgress((int) position);
@@ -394,33 +444,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         songInfo.setText(str);
     }
 
-    private void setMainFragment(){
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        Menu menu = navigationView.getMenu();
-        switch (getLibraryTypeFromProps()) {
-            case LIBRARY_TYPE_EXTERNAL_STORAGE:
-                menu.findItem(R.id.external_storage).setChecked(true);
-                break;
-            case LIBRARY_TYPE_MEDIA_LIBRARY:
-                menu.findItem(R.id.all_media).setChecked(true);
-                break;
-            case LIBRARY_TYPE_ARTISTS:
-                menu.findItem(R.id.artists).setChecked(true);
-                break;
-        }
-        setFragment(new PlaylistFragment());
+    private void setMainFragment() {
+        PlaylistFragment playlistFragment = new PlaylistFragment();
+        playListViewlistener = playlistFragment;
+        setFragment(playlistFragment);
     }
 
-    private void setFragment(Fragment fragment){
+    private void setFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        if(fragmentManager.getFragments().size() == 0){
+        if (fragmentManager.getFragments().size() == 0) {
             fragmentManager.beginTransaction()
-                    .add(R.id.main_fragment, fragment,"main")
+                    .add(R.id.main_fragment, fragment, "main")
                     .commit();
-        }else {
+        } else {
             fragmentManager.beginTransaction()
                     .detach(fragmentManager.getFragments().get(0))
-                    .replace(R.id.main_fragment, fragment,"main")
+                    .replace(R.id.main_fragment, fragment, "main")
                     .commit();
         }
     }
@@ -435,6 +474,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             switch (currentState) {
                 case PlaybackStateCompat.STATE_NONE:
                 case PlaybackStateCompat.STATE_STOPPED:
+                case PlaybackStateCompat.STATE_PAUSED:
                     playPauseButton.setImageResource(R.drawable.play_icon_black);
                     handler.removeCallbacks(null);
                     break;
@@ -449,11 +489,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             handler.postDelayed(this, 1000);
                         }
                     });
-                    break;
-
-                case PlaybackStateCompat.STATE_PAUSED:
-                    playPauseButton.setImageResource(R.drawable.play_icon_black);
-                    handler.removeCallbacks(null);
                     break;
 
                 case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
@@ -477,11 +512,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
         @Override
-        public void onSessionDestroyed() {}
+        public void onSessionDestroyed() {
+        }
     };
 
-    private LibraryType getLibraryTypeFromProps(){
-        switch ((String)properties.get(LIBRARY_TYPE)) {
+    private LibraryType getLibraryTypeFromProps() {
+        switch ((String) properties.get(LIBRARY_TYPE)) {
             case "MediaLibrary": {
                 return LibraryType.LIBRARY_TYPE_MEDIA_LIBRARY;
             }
@@ -495,21 +531,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return null;
     }
 
-    public void setAdapterAndScroll(){
-        if(playlistService != null) {
-            playlistService.setAdapter();
-            playlistService.scrollToCurrentPosition();
-        }
-    }
-
-    private void equalizerButtonOnClick(){
-        if(ifEqualizerOpened){
+    private void equalizerButtonOnClick() {
+        if (ifEqualizerOpened) {
             setMainFragment();
             ifEqualizerOpened = false;
-        }else {
+        } else {
+            playListViewlistener = null;
             setFragment(new EqualizerFragment());
             ifEqualizerOpened = true;
         }
     }
-
 }

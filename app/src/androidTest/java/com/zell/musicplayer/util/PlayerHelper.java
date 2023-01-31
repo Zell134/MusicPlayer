@@ -14,12 +14,10 @@ public class PlayerHelper {
         return Player.getInstance().isPaused();
     }
 
-    public static boolean isPlaying(){
-        return !isStopped() && !isPaused();
-    }
+    public static boolean isPlaying(){return player.isPlaying();}
 
     public static boolean isStopped() {
-        return player.isPlaying();
+        return !isPlaying() && !isPaused();
     }
 
     public static int getCurrentPosition() {
