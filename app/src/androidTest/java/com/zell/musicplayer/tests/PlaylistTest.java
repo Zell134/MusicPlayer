@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Random;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.Step;
 
 public class PlaylistTest extends  BaseTest {
@@ -32,6 +33,7 @@ public class PlaylistTest extends  BaseTest {
     public void setup() {
         controls = new ControlsPage();
         playlistPage = new PlaylistPage();
+        playlistPage.isPlaylistOpened();
         mediaLibraryService = new MediaLibraryService();
         allMediaPlaylist = mediaLibraryService.getAllMedia(getActivity());
     }
@@ -75,6 +77,17 @@ public class PlaylistTest extends  BaseTest {
     @Test
     public void currentSongIsHighlighted() {
         setAllMediaLibrary();
+        playlistPage.isItemAtPositionHighlighted(0);
+    }
+
+    @Step("Current song is highlighted on change device orientation")
+    @Test
+    public void currentSongIsHighlightedOChangeOrientation() {
+        setAllMediaLibrary();
+        playlistPage.isItemAtPositionHighlighted(0);
+        DeviceHelper.changeOrientation(DeviceHelper.ROTATION_90);
+        playlistPage.isItemAtPositionHighlighted(0);
+        DeviceHelper.changeOrientation(DeviceHelper.ROTATION_0);
         playlistPage.isItemAtPositionHighlighted(0);
     }
 
@@ -219,6 +232,34 @@ public class PlaylistTest extends  BaseTest {
 
     private void setArtistsLibrary() {
         step("Set artists library", () -> new ToolbarPage().openMenu().clickArtists());
+    }
+
+    @Description("The same playlist is displayed on change screen orientation")
+    @Test
+    public void theSamePlaylistDisplayed_OnScreenOrientationChanged() {
+
+        Path path = createPathToSong();
+        List<Item> playlist = mediaLibraryService.getSongsOfAlbum(getActivity(),
+                path.getAlbum().getTitle(),
+                path.getArtist().getTitle()
+        );
+
+        playlistPage.clickOnItemAtPosition(path.getArtist().getPosition())
+                .clickOnItemAtPosition(path.getAlbum().getPosition())
+                .IsPlaylistHasSize(playlist.size())
+                .isItemAtPositionHasTitle(path.getSong().getPosition(), path.getSong().getTitle());
+
+        DeviceHelper.changeOrientation(DeviceHelper.ROTATION_90);
+        waitForElementVisible();
+        playlistPage
+                .IsPlaylistHasSize(playlist.size())
+                .isItemAtPositionHasTitle(path.getSong().getPosition(), path.getSong().getTitle());
+
+        DeviceHelper.changeOrientation(DeviceHelper.ROTATION_0);
+        waitForElementVisible();
+        playlistPage
+                .IsPlaylistHasSize(playlist.size())
+                .isItemAtPositionHasTitle(path.getSong().getPosition(), path.getSong().getTitle());
     }
 
     private Path createPathToSong() {
