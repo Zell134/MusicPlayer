@@ -403,6 +403,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             drawer.closeDrawer(GravityCompat.START);
         } else if (ifEqualizerOpened) {
             setMainFragment();
+            updateAdapter(playlistService.getPlaylist());
             ifEqualizerOpened = false;
         } else {
             playlistService.onBackPressed();
@@ -534,6 +535,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void equalizerButtonOnClick() {
         if (ifEqualizerOpened) {
             setMainFragment();
+            updateAdapter(playlistService.getPlaylist());
             ifEqualizerOpened = false;
         } else {
             playListViewlistener = null;
