@@ -11,5 +11,9 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+
+        <!-- Seekbar style. -->
+        <item name="android:progressTint">@color/primary_color</item>
+        <item name="android:thumbTint">@color/primary_color</item>
     </style>
 </resources>

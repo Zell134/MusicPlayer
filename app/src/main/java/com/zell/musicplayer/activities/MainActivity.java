@@ -22,6 +22,7 @@ import android.os.Handler;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -182,6 +183,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ImageButton equalizerButton = findViewById(R.id.equqlizer_button);
         ImageView exit = findViewById(R.id.exit);
         SeekBar seekbar = findViewById(R.id.seekbar);
+
+        ImageView albumArt = findViewById(R.id.album_art);
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int height = metrics.heightPixels;
+        albumArt.getLayoutParams().height = height/4;
+        albumArt.getLayoutParams().width = height/4;
 
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 

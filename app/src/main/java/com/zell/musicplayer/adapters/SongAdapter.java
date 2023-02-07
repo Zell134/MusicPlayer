@@ -67,7 +67,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
     @Override
     public void onBindViewHolder(@NonNull PlaylistViewHolder holder, int position) {
         holder.bind(playlist.get(position), position);
-        holder.itemView.setBackgroundResource(listener.getCurrentSongPosition() == position ? R.color.selected_item : R.color.default_list_color);
+        holder.itemView.setBackgroundResource(listener.getCurrentSongPosition() == position ? R.drawable.playlist_selected_item : R.drawable.playlist_item);
     }
 
     @Override

@@ -47,12 +47,6 @@
 
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_height="match_parent"
-                android:layout_width="1dp"
-                android:orientation="vertical"
-                android:background="@color/selected_item"/>
-
             <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/main_fragment"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"
