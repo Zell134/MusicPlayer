@@ -9,6 +9,9 @@ import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
 import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
 import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
+import static com.zell.musicplayer.db.PropertiesList.Mode;
+import static com.zell.musicplayer.db.PropertiesList.Mode.DARK;
+import static com.zell.musicplayer.db.PropertiesList.Mode.LIGHT;
 import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
 import static com.zell.musicplayer.services.PermissionsService.checkPermissions;
 
@@ -80,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private MediaBrowserViewModel mediaBrowserViewModel;
     private PlaylistViewModel playlistViewModel;
     private PlayListViewListener playListViewlistener;
+    private Mode mode;
 
     public interface PlayListViewListener {
         void setSelectedPosition(int oldPosition, int newPosition);
@@ -90,12 +94,28 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        mode = PropertiesService.getMode(this);
+        if (mode == null) {
+            mode = LIGHT;
+            PropertiesService.setMode(this, mode);
+        }
+        if (mode.equals(DARK)) {
+            setTheme(R.style.NightMode);
+        }
+
         properties = PropertiesService.getAllProperties(this);
 
-        mediaBrowserViewModel = new ViewModelProvider(this).get(MediaBrowserViewModel.class);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
+        ImageView albumArt = findViewById(R.id.album_art);
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int height = metrics.heightPixels;
+        albumArt.getLayoutParams().height = height / 4;
+        albumArt.getLayoutParams().width = height / 4;
+
+        mediaBrowserViewModel = new ViewModelProvider(this).get(MediaBrowserViewModel.class);
         mediaBrowserViewModel
                 .getMediaController()
                 .observe(this, mediaControllerCompat -> {
@@ -121,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         if (checkPermissions(this)) {
             setMainFragment();
+            mediaBrowserViewModel.connect();
             new Handler()
                     .post(() -> {
                         setPlayListService();
@@ -184,12 +205,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ImageView exit = findViewById(R.id.exit);
         SeekBar seekbar = findViewById(R.id.seekbar);
 
-        ImageView albumArt = findViewById(R.id.album_art);
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        int height = metrics.heightPixels;
-        albumArt.getLayoutParams().height = height/4;
-        albumArt.getLayoutParams().width = height/4;
+        if (mode.equals(DARK)) {
+            MenuItem modeView = menu.findItem(R.id.mode);
+            modeView.setTitle(R.string.light_mode);
+            modeView.setIcon(R.drawable.light_mode_icon);
+
+            playButton.setImageResource(R.drawable.play_icon_white);
+            stopButton.setImageResource(R.drawable.stop_icon_white);
+            previousButton.setImageResource(R.drawable.previous_icon_white);
+            nextButton.setImageResource(R.drawable.next_icon_white);
+            equalizerButton.setImageResource(R.drawable.equalizer_white_icon);
+        }
 
         seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
@@ -265,10 +291,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onStart() {
+
+
         super.onStart();
-        if (checkPermissions(this)) {
-            mediaBrowserViewModel.connect();
-        }
     }
 
     @Override
@@ -392,6 +417,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case (R.id.menu_equalizer):
                 equalizerButtonOnClick();
                 break;
+            case (R.id.mode):
+                new Handler().post(() -> {
+                    if (mode.equals(DARK)) {
+                        PropertiesService.setMode(this, LIGHT);
+                    } else {
+                        PropertiesService.setMode(this, DARK);
+                    }
+                    this.recreate();
+                });
+                break;
             case (R.id.exit):
                 mediaBrowserViewModel.disconnect();
                 this.finishAffinity();
@@ -484,12 +519,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 case PlaybackStateCompat.STATE_NONE:
                 case PlaybackStateCompat.STATE_STOPPED:
                 case PlaybackStateCompat.STATE_PAUSED:
-                    playPauseButton.setImageResource(R.drawable.play_icon_black);
+                    playPauseButton.setImageResource(mode.equals(DARK) ? R.drawable.play_icon_white : R.drawable.play_icon_black);
                     handler.removeCallbacks(null);
                     break;
 
                 case PlaybackStateCompat.STATE_PLAYING:
-                    playPauseButton.setImageResource(R.drawable.pause_icon_black);
+                    playPauseButton.setImageResource(mode.equals(DARK) ? R.drawable.pause_icon_white : R.drawable.pause_icon_black);
                     handler.removeCallbacks(null);
                     handler.post(new Runnable() {
                         @Override
