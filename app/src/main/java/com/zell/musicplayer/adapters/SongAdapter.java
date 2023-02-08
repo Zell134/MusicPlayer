@@ -1,6 +1,7 @@
 package com.zell.musicplayer.adapters;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,7 +68,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.PlaylistViewHo
     @Override
     public void onBindViewHolder(@NonNull PlaylistViewHolder holder, int position) {
         holder.bind(playlist.get(position), position);
-        holder.itemView.setBackgroundResource(listener.getCurrentSongPosition() == position ? R.color.selected_item : R.color.default_list_color);
+        if(listener.getCurrentSongPosition() == position){
+            holder.itemView.setBackgroundResource(R.drawable.playlist_selected_item);
+            ((TextView)holder.itemView.findViewById(R.id.song_title)).setTextColor(Color.BLACK);
+            ((TextView)holder.itemView.findViewById(R.id.song_artist)).setTextColor(Color.BLACK);
+        }else {
+            holder.itemView.setBackgroundResource(R.drawable.playlist_item);
+        }
     }
 
     @Override

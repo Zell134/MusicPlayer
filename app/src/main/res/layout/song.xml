@@ -4,7 +4,8 @@
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="5dp">
+    android:padding="5dp"
+    android:background="@drawable/playlist_item">
 
     <ImageView
         android:id="@+id/content_icon"
@@ -21,7 +22,6 @@
             android:id="@+id/song_title"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/black"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -30,7 +30,6 @@
             android:id="@+id/song_artist"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/black"
             android:textSize="14sp" />
     </LinearLayout>
 

@@ -7,8 +7,9 @@ public class PropertiesList {
     public static String EQUALIZER = "Equalizer";
     public static String CURRENT_PRESET = "CurrentPreset";
     public static String DELIMITER = "_";
-    public static String ECHO_CANCELER = "AcousticEchoCanceler";
-    public static String NOIZE_SUPPRESSOR = "NoiseSuppressor";
     public static String BASS_BOOST = "BassBoost";
     public static String VOLUME_LEVEL = "Volume";
+    public static String MODE = "Mode";
+
+    public enum Mode{DARK, LIGHT};
 }

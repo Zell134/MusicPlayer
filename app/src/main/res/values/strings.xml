@@ -24,14 +24,14 @@
     <string name="stop">Stop</string>
     <!--    Player-->
 
-
     <!--    Menu options-->
     <string name="all_media_library">Библиотека</string>
     <string name="external_storage">Внешний накопитель</string>
     <string name="artists">Исполнители</string>
+    <string name="light_mode">Светлый режим</string>
+    <string name="dark_mode">Темный режим</string>
     <string name="exit">Выход</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <!--     Menu options-->
+    <!--    Menu options-->
+
 
 </resources>

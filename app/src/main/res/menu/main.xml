@@ -23,6 +23,11 @@
             android:icon="@drawable/equalizer_icon"
             android:title="@string/equalizer_string" />
 
+    <item
+        android:id="@+id/mode"
+        android:icon="@drawable/dark_mode_icon"
+        android:title="@string/dark_mode" />
+
         <item
             android:id="@+id/exit"
             android:icon="@android:drawable/ic_menu_close_clear_cancel"

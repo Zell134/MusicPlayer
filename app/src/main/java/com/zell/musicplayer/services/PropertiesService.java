@@ -6,6 +6,9 @@ import static com.zell.musicplayer.db.PropertiesList.CURRENT_SONG;
 import static com.zell.musicplayer.db.PropertiesList.DELIMITER;
 import static com.zell.musicplayer.db.PropertiesList.EQUALIZER;
 import static com.zell.musicplayer.db.PropertiesList.LIBRARY_TYPE;
+import static com.zell.musicplayer.db.PropertiesList.MODE;
+import static com.zell.musicplayer.db.PropertiesList.Mode.DARK;
+import static com.zell.musicplayer.db.PropertiesList.Mode.LIGHT;
 import static com.zell.musicplayer.db.PropertiesList.VOLUME_LEVEL;
 
 import android.content.Context;
@@ -13,6 +16,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.zell.musicplayer.db.DatabaseHelper;
 import com.zell.musicplayer.db.LibraryType;
+import com.zell.musicplayer.db.PropertiesList;
 
 import java.util.Properties;
 
@@ -102,6 +106,22 @@ public class PropertiesService {
 
     public static void setEqualizerBand(Context context, short band, String value) {
         setValue(context, EQUALIZER + DELIMITER + String.valueOf(band), value);
+    }
+
+    public static PropertiesList.Mode getMode(Context context) {
+        String mode = getValue(context, MODE);
+
+        if (mode != null && LIGHT.name().equals(mode)) {
+            return LIGHT;
+        }
+        if (mode != null && DARK.name().equals(mode)) {
+            return DARK;
+        }
+        return null;
+    }
+
+    public static void setMode(Context context, PropertiesList.Mode value) {
+        setValue(context, MODE, value.name());
     }
 
     private static String getValue(Context context, String key){
