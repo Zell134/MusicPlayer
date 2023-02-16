@@ -25,7 +25,6 @@ import android.os.Handler;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -107,13 +106,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        ImageView albumArt = findViewById(R.id.album_art);
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        int height = metrics.heightPixels;
-        albumArt.getLayoutParams().height = height / 4;
-        albumArt.getLayoutParams().width = height / 4;
 
         mediaBrowserViewModel = new ViewModelProvider(this).get(MediaBrowserViewModel.class);
         mediaBrowserViewModel
